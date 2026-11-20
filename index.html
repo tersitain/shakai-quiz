@@ -71,6 +71,7 @@ h2{font-size:1.05rem;margin:22px 0 8px}
 textarea{width:100%;height:160px;margin-top:8px;font:inherit;font-size:.82rem;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:8px}
 .okline{color:var(--ok);font-size:.85rem;font-weight:600;margin:4px 0}
 .alert{margin:4px 0}
+.uh{font-weight:700;background:var(--acc2);color:var(--acc);border-radius:6px}.okc{color:var(--ok);font-weight:700}
 </style>
 </head>
 <body>
@@ -142,10 +143,12 @@ function pending(u){return (u==null?every():all(u)).filter(x=>rec0(key(x)).m)}
 function mark(x,ok){const k=key(x),r=Object.assign({},rec0(k));
   if(ok){r.r++;r.s++;if(r.s>=2)r.m=0}else{r.w++;r.s=0;r.m=1}
   r.t=Date.now();st.q[k]=r;const d=today(),g=st.days[d]||[0,0];g[0]++;if(ok)g[1]++;st.days[d]=g;save()}
-function unitStat(u){let c=0,r=0,w=0,m=0;const n=UNITS[u].q.length;
-  for(let i=0;i<n;i++){const x=rec0(id(u,i));if(x.r)c++;r+=x.r;w+=x.w;if(x.m)m++}
-  return {n,c,r,w,m,rate:r+w?Math.round(r/(r+w)*100):null}}
-function totals(){let n=0,c=0,r=0,w=0,m=0;UNITS.forEach((_,u)=>{const s=unitStat(u);n+=s.n;c+=s.c;r+=s.r;w+=s.w;m+=s.m});return {n,c,r,w,m,rate:r+w?Math.round(r/(r+w)*100):null}}
+function unitStat(u){let c=0,r=0,w=0,m=0,a=0,ok=0,ev=0;const n=UNITS[u].q.length;
+  for(let i=0;i<n;i++){const x=rec0(id(u,i));if(x.r)c++;r+=x.r;w+=x.w;if(x.m)m++;if(x.r+x.w){a++;if(x.s>0)ok++}if(x.w)ev++}
+  return {n,c,r,w,m,a,ok,ev,rate:a?Math.round(ok/a*100):null}}
+function totals(){const t={n:0,c:0,r:0,w:0,m:0,a:0,ok:0,ev:0};UNITS.forEach((_,u)=>{const s=unitStat(u);for(const k in t)t[k]+=s[k]});
+  t.rate=t.a?Math.round(t.ok/t.a*100):null;t.cum=t.r+t.w?Math.round(t.r/(t.r+t.w)*100):null;return t}
+function everWrong(){return every().filter(x=>rec0(key(x)).w>0).sort((a,b)=>rec0(key(b)).w-rec0(key(a)).w||a.u-b.u||a.i-b.i)}
 
 /* ---- ホーム ---- */
 function home(){
@@ -156,7 +159,7 @@ function home(){
   <div><b>${t.c}<i> / ${t.n}</i></b><small>クリアした問題</small></div><div class="${t.m?'warn':''}"><b>${t.m}</b><small>復習まちの問題</small></div></div>
   <p class="${cloud==='ok'||lsOK||idbOK?'okline':'alert'}">${whereSaved()}。</p>
   <div class="bar"><button class="btn pri" id="rev" ${t.m?'':'disabled'}>復習する（${t.m}問）</button>
-  <button class="btn" id="mix">全範囲からランダム ${N} 問</button><button class="btn" id="rc">記録を見る</button></div>
+  <button class="btn" id="mix">全範囲からランダム ${N} 問</button><button class="btn" id="rc">記録を見る</button><button class="btn" id="wl" ${t.ev?'':'disabled'}>まちがえた問題の一覧（${t.ev}問）</button></div>
   <div class="bar"><div class="seg">
   <button data-m="quiz" class="${mode==='quiz'?'on':''}">4択クイズ</button>
   <button data-m="card" class="${mode==='card'?'on':''}">めくりカード</button>
@@ -171,6 +174,7 @@ function home(){
   document.getElementById('rev').onclick=()=>review(null);
   document.getElementById('mix').onclick=()=>run(shuf(every()).slice(0,N),'全範囲ランダム');
   document.getElementById('rc').onclick=()=>records();
+  document.getElementById('wl').onclick=wrongList;
   const jm=document.getElementById('jmix');if(jm)jm.onclick=()=>{let a=[];UNITS.forEach((u,k)=>{if(u.j)a=a.concat(all(k))});run(shuf(a).slice(0,N),'時事ランダム')};
   window.scrollTo(0,0);
 }
@@ -243,11 +247,33 @@ function list(u){
   document.getElementById('bk').onclick=home;window.scrollTo(0,0);
 }
 
+/* ---- これまでにまちがえた問題の一覧 ---- */
+function wrongList(){
+  screen='wl';const a=everWrong(),pe=a.filter(x=>rec0(key(x)).m).length;
+  let h=`<div class="card"><div class="top"><button class="back" id="bk">← もどる</button><span>まちがえた問題の一覧　${a.length}問</span></div>
+  <p class="lead">これまでに1回でもまちがえた問題です（復習まち ${pe}問、いまは正解 ${a.length-pe}問）。</p>`;
+  if(a.length){h+=`<div class="bar"><button class="btn pri" id="go">この中から ${Math.min(N,a.length)} 問とく</button><button class="btn" id="tg">答えをぜんぶ表示</button></div><table>`;
+    let cu=-1;a.slice().sort((x,y)=>x.u-y.u||rec0(key(y)).w-rec0(key(x)).w||x.i-y.i).forEach(x=>{const r=rec0(key(x));
+      if(x.u!==cu){cu=x.u;h+=`<tr><td colspan="2" class="uh">${esc(UNITS[x.u].t)}</td></tr>`}
+      h+=`<tr><td><span class="cnt">×${r.w}</span> ${esc(x.q)}<br><small class="${r.m?'cnt':'okc'}">${r.m?'復習まち':'いまは正解'}</small></td><td class="a hide"><span>${esc(x.a)}</span></td></tr>`});
+    h+=`</table><p class="note">×の数字はまちがえた回数です。答えのらんをタップすると表示されます。</p>`}
+  else h+='<p class="lead">まだまちがえた問題はありません。</p>';
+  $.innerHTML=h+'</div>';
+  document.getElementById('bk').onclick=home;
+  $.querySelectorAll('td.a').forEach(c=>c.onclick=()=>c.classList.toggle('hide'));
+  const tg=document.getElementById('tg');let shown=false;
+  if(tg)tg.onclick=function(){shown=!shown;$.querySelectorAll('td.a').forEach(c=>c.classList.toggle('hide',!shown));this.textContent=shown?'答えをぜんぶかくす':'答えをぜんぶ表示'};
+  const go=document.getElementById('go');
+  // 復習まちを先に、のこりはまちがえた回数が多い順
+  if(go)go.onclick=()=>{const p=a.filter(x=>rec0(key(x)).m).concat(a.filter(x=>!rec0(key(x)).m));run(shuf(p.slice(0,N)),'まちがえた問題')};
+  window.scrollTo(0,0);
+}
+
 /* ---- 記録 ---- */
 function lastDays(n){const r=[];for(let i=0;i<n;i++){const d=new Date();d.setDate(d.getDate()-i);const k=today(d),g=st.days[k]||[0,0];r.push([k,g[0],g[1]])}return r}
-function report(){const t=totals(),L=['社会データバンク 暗記クイズ 成績（'+today()+'）','クリア '+t.c+' / '+t.n+'問　正答率 '+(t.rate==null?'–':t.rate+'%')+'　復習まち '+t.m+'問','','■ 日別（といた数／正解）'];
+function report(){const t=totals(),L=['社会データバンク 暗記クイズ 成績（'+today()+'）','クリア '+t.c+' / '+t.n+'問　いまの正答率 '+(t.rate==null?'–':t.rate+'%')+'（累計 '+(t.cum==null?'–':t.cum+'%')+'）　まちがえたことがある '+t.ev+'問　復習まち '+t.m+'問','','■ 日別（といた数／正解）'];
   lastDays(7).forEach(d=>L.push(d[0].slice(5).replace('-','/')+'　'+d[1]+'問／'+d[2]+'問'));
-  L.push('','■ 単元別（クリア／正答率／復習まち）');
+  L.push('','■ 単元別（クリア／いまの正答率／復習まち）');
   UNITS.forEach((u,k)=>{const s=unitStat(k);L.push(u.t+'　'+s.c+'/'+s.n+'　'+(s.rate==null?'–':s.rate+'%')+'　'+s.m+'問')});
   const p=pending(null).sort((a,b)=>rec0(key(b)).w-rec0(key(a)).w);
   if(p.length){L.push('','■ 復習まちの問題（まちがえた回数）');p.forEach(x=>L.push('×'+rec0(key(x)).w+'　'+x.q+' → '+x.a))}
@@ -255,11 +281,13 @@ function report(){const t=totals(),L=['社会データバンク 暗記クイズ 
 function records(noPull){
   screen='rec';if(!noPull&&ref)pull();const t=totals(),p=pending(null).sort((a,b)=>rec0(key(b)).w-rec0(key(a)).w);
   let h=`<div class="card"><div class="top"><button class="back" id="bk">← もどる</button><span>記録</span></div>
-  <div class="stats"><div><b>${t.c}<i> / ${t.n}</i></b><small>クリアした問題</small></div><div><b>${t.rate==null?'–':t.rate+'%'}</b><small>これまでの正答率</small></div>
+  <div class="stats"><div><b>${t.c}<i> / ${t.n}</i></b><small>クリアした問題</small></div><div><b>${t.rate==null?'–':t.rate+'%'}</b><small>いまの正答率</small></div>
   <div><b>${t.r+t.w}</b><small>といた回数</small></div><div class="${t.m?'warn':''}"><b>${t.m}</b><small>復習まちの問題</small></div></div>
+  <p class="note" style="margin-top:0">いまの正答率は、といた ${t.a} 問のうち、いちばん最近の回答が正解だった問題（${t.ok} 問）の割合です。まちがえた問題も、あとで正解すれば上がります。全回答の累計では ${t.cum==null?'–':t.cum+'%'} です。</p>
+  <div class="bar"><button class="btn" id="wl2" ${t.ev?'':'disabled'}>まちがえた問題の一覧（${t.ev}問）</button></div>
   <h2>日ごとの記録（7日間）</h2><table class="tb"><tr><th>日</th><th>といた数</th><th>正解</th><th>正答率</th></tr>
   ${lastDays(7).map(d=>`<tr><td>${d[0].slice(5).replace('-','/')}</td><td>${d[1]}</td><td>${d[2]}</td><td>${d[1]?Math.round(d[2]/d[1]*100)+'%':'–'}</td></tr>`).join('')}</table>
-  <h2>単元ごとの記録</h2><table class="tb"><tr><th>単元</th><th>クリア</th><th>正答率</th><th>復習まち</th></tr>
+  <h2>単元ごとの記録</h2><table class="tb"><tr><th>単元</th><th>クリア</th><th>いまの正答率</th><th>復習まち</th></tr>
   ${UNITS.map((u,k)=>{const s=unitStat(k);return `<tr><td>${esc(u.t)}</td><td>${s.c} / ${s.n}</td><td>${s.rate==null?'–':s.rate+'%'}</td><td>${s.m?`<button class="mini" data-r="${k}">${s.m}問 復習</button>`:'0'}</td></tr>`}).join('')}</table>
   <h2>復習まちの問題（${p.length}問）</h2>`;
   h+=p.length?`<div class="bar"><button class="btn pri" id="rv">まとめて復習する</button><button class="btn" id="tg">答えをぜんぶ表示</button></div>
@@ -268,7 +296,7 @@ function records(noPull){
   h+=`<h2>成績を送る</h2><div class="bar"><button class="btn" id="cp">成績をコピー</button></div><textarea id="tx" readonly hidden></textarea>
   <p class="note">保存の状態：${whereSaved()}。</p></div>`;
   $.innerHTML=h;
-  document.getElementById('bk').onclick=home;
+  document.getElementById('bk').onclick=home;document.getElementById('wl2').onclick=wrongList;
   $.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>review(+b.dataset.r));
   $.querySelectorAll('td.a').forEach(c=>c.onclick=()=>c.classList.toggle('hide'));
   const rv=document.getElementById('rv');if(rv)rv.onclick=()=>review(null);
