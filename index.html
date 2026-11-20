@@ -178,7 +178,7 @@ function home(){
   <button data-m="card" class="${mode==='card'?'on':''}">めくりカード</button>
   <button data-m="list" class="${mode==='list'?'on':''}">一覧でチェック</button></div></div><h2>ボスバトル（たおした数 ${UNITS.filter((_,k)=>beaten(k)).length} / ${UNITS.length}）</h2>
   <div class="bosses">${UNITS.map((u,k)=>`<button class="bz ${beaten(k)?'':'off'}" data-b="${k}"><span>${bossOf(k)[0]}</span><small>${esc(u.t.split('　')[0])}${beaten(k)?'<br>Lv.'+Math.min(5,beaten(k))+' クリア':''}</small></button>`).join('')}</div>
-  <p class="note" style="margin-top:6px">ボスをタップするとバトル開始。正解でこうげき、まちがえるとハートがへり、ボスがかいふくします。1問の制限時間は10秒で、時間切れはまちがいになります。5問つづけて正解するとコンボでダメージ2倍。たおすたびにボスのレベルが上がります（Lv.5まで）。</p>
+  <p class="note" style="margin-top:6px">ボスをタップするとバトル開始。正解でこうげき、まちがえるとハートがへり、ボスがかいふくします。1問の制限時間はLv.1が15秒で、レベルが上がるほど短くなります（13→11→9→8秒）。時間切れはまちがいになります。5問つづけて正解するとコンボでダメージ2倍。たおすたびにボスのレベルが上がります（Lv.5まで）。</p>
   <h2>地理データバンク</h2><div class="units">`;
   UNITS.forEach((u,k)=>{const s=unitStat(k);
     if(u.j&&!(UNITS[k-1]||{}).j)h+=`</div><h2>時事問題（2026年のニュース）</h2><div class="bar"><button class="btn" id="jmix">時事からランダム ${N} 問</button></div><div class="units">`;
@@ -261,11 +261,11 @@ function boss(u){
   let queue=shuf(a.filter(x=>rec0(key(x)).m)).concat(shuf(a.filter(x=>!rec0(key(x)).m&&!rec0(key(x)).r))).concat(shuf(a.filter(x=>!rec0(key(x)).m&&rec0(key(x)).r))),qi=0;
   function nextQ(){if(qi>=queue.length){queue=shuf(a);qi=0}return queue[qi++]}
   const hearts=()=>'❤️'.repeat(life)+'🤍'.repeat(3-life);
-  const LIMIT=10;let timer=null;const stop=()=>{if(timer){clearInterval(timer);timer=null}};
+  const LIMIT=[15,13,11,9,8][lv-1];let timer=null;const stop=()=>{if(timer){clearInterval(timer);timer=null}};
   function show(){
     const x=nextQ(),weak=!!rec0(key(x)).m,os=opts(x);turn++;
     $.innerHTML=`<div class="card"><div class="top"><button class="back" id="bk">← にげる</button><span>ボスバトル　${esc(UNITS[u].t)}</span></div>
-    <div class="arena"><div class="face" id="fc">${B[0]}</div><div class="bname">${esc(B[1])}　Lv.${lv}</div>
+    <div class="arena"><div class="face" id="fc">${B[0]}</div><div class="bname">${esc(B[1])}　Lv.${lv}<small class="un">　制限 ${LIMIT} 秒</small></div>
     <div class="hp"><i id="hp" style="width:${hp/MAX*100}%"></i></div><div class="brow"><span id="hpt">HP ${hp} / ${MAX}</span><span id="cb">${combo>=2?combo+'れんぞく正解！':''}</span><span id="lf">${hearts()}</span></div></div>
     <div class="tm"><i id="tm"></i></div><div class="tmt" id="tmt">のこり ${LIMIT} 秒</div>
     ${weak?'<div class="tag">弱点！ 正解で大ダメージ</div>':''}<div class="q">${esc(x.q)}</div>${os.map((o,i)=>`<button class="opt" data-i="${i}">${esc(o)}</button>`).join('')}
