@@ -72,6 +72,16 @@ textarea{width:100%;height:160px;margin-top:8px;font:inherit;font-size:.82rem;ba
 .okline{color:var(--ok);font-size:.85rem;font-weight:600;margin:4px 0}
 .alert{margin:4px 0}
 .uh{font-weight:700;background:var(--acc2);color:var(--acc);border-radius:6px}.okc{color:var(--ok);font-weight:700}
+.bosses{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:8px}
+.bz{border:1px solid var(--line);background:var(--card);border-radius:12px;padding:6px 2px 4px;text-align:center}
+.bz span{display:block;font-size:1.9rem;line-height:1.3}.bz small{display:block;font-size:.68rem;color:var(--sub)}
+.bz.off span{filter:grayscale(1);opacity:.35}.bz:not(.off){border-color:var(--gold)}
+.arena{text-align:center;margin:4px 0 12px}.face{font-size:5rem;line-height:1.2;display:inline-block}
+.face.hit{animation:hit .45s}.face.down{filter:grayscale(1);transform:rotate(90deg);opacity:.6}
+@keyframes hit{20%{transform:translateX(-10px) rotate(-8deg)}50%{transform:translateX(10px) rotate(8deg);opacity:.5}80%{transform:translateX(-5px)}}
+.bname{font-weight:800;font-size:1.1rem;margin-bottom:6px}
+.hp{height:14px;background:var(--line);border-radius:7px;overflow:hidden}.hp i{display:block;height:100%;background:var(--ng);transition:width .4s}
+.brow{display:flex;justify-content:space-between;font-size:.85rem;color:var(--sub);margin-top:4px;font-weight:600}#cb{color:var(--gold)}
 </style>
 </head>
 <body>
@@ -114,6 +124,7 @@ function merge(a,b){const o={v:2,q:{},days:{},ts:Math.max(a.ts||0,b.ts||0)};
   new Set(Object.keys(a.q).concat(Object.keys(b.q))).forEach(k=>{const x=a.q[k],y=b.q[k];
     o.q[k]=!x?y:!y?x:((y.t||0)>(x.t||0)||((y.t||0)===(x.t||0)&&y.r+y.w>x.r+x.w))?y:x});
   new Set(Object.keys(a.days).concat(Object.keys(b.days))).forEach(k=>{const x=a.days[k]||[0,0],y=b.days[k]||[0,0];o.days[k]=y[0]>x[0]?y:x});
+  const ba=a.boss||{},bb=b.boss||{};if(a.boss||b.boss){o.boss={};new Set(Object.keys(ba).concat(Object.keys(bb))).forEach(k=>{const x=ba[k]||{n:0,best:0},y=bb[k]||{n:0,best:0};o.boss[k]={n:Math.max(x.n,y.n),best:Math.max(x.best,y.best)}})}
   return o}
 function localSave(){const j=JSON.stringify(st);try{localStorage.setItem(KEY,j);lsOK=true}catch(e){lsOK=false}idbPut(j).then(()=>{idbOK=true},()=>{idbOK=false})}
 function push(){if(!ref)return;if(writing){again=true;return}writing=true;
@@ -163,7 +174,10 @@ function home(){
   <div class="bar"><div class="seg">
   <button data-m="quiz" class="${mode==='quiz'?'on':''}">4択クイズ</button>
   <button data-m="card" class="${mode==='card'?'on':''}">めくりカード</button>
-  <button data-m="list" class="${mode==='list'?'on':''}">一覧でチェック</button></div></div><h2>地理データバンク</h2><div class="units">`;
+  <button data-m="list" class="${mode==='list'?'on':''}">一覧でチェック</button></div></div><h2>ボスバトル（たおした数 ${UNITS.filter((_,k)=>beaten(k)).length} / ${UNITS.length}）</h2>
+  <div class="bosses">${UNITS.map((u,k)=>`<button class="bz ${beaten(k)?'':'off'}" data-b="${k}"><span>${bossOf(k)[0]}</span><small>${esc(u.t.split('　')[0])}</small></button>`).join('')}</div>
+  <p class="note" style="margin-top:6px">ボスをタップするとバトル開始。正解でこうげき、まちがえるとハートがへります。復習まちの問題はボスの弱点です。</p>
+  <h2>地理データバンク</h2><div class="units">`;
   UNITS.forEach((u,k)=>{const s=unitStat(k);
     if(u.j&&!(UNITS[k-1]||{}).j)h+=`</div><h2>時事問題（2026年のニュース）</h2><div class="bar"><button class="btn" id="jmix">時事からランダム ${N} 問</button></div><div class="units">`;
     h+=`<button class="unit" data-u="${k}"><b>${esc(u.t)}</b><small>${s.c} / ${s.n} 問クリア${s.rate==null?'':'　正答率 '+s.rate+'%'}</small>${s.m?`<span class="badge">復習 ${s.m}</span>`:''}<div class="meter"><i style="width:${Math.round(s.c/s.n*100)}%"></i></div></button>`});
@@ -174,6 +188,7 @@ function home(){
   document.getElementById('rev').onclick=()=>review(null);
   document.getElementById('mix').onclick=()=>run(shuf(every()).slice(0,N),'全範囲ランダム');
   document.getElementById('rc').onclick=()=>records();
+  $.querySelectorAll('[data-b]').forEach(b=>b.onclick=()=>boss(+b.dataset.b));
   document.getElementById('wl').onclick=wrongList;
   const jm=document.getElementById('jmix');if(jm)jm.onclick=()=>{let a=[];UNITS.forEach((u,k)=>{if(u.j)a=a.concat(all(k))});run(shuf(a).slice(0,N),'時事ランダム')};
   window.scrollTo(0,0);
@@ -234,6 +249,52 @@ function run(qs,title,u,isRev){
   show();
 }
 
+/* ---- ボスバトル ---- */
+const BOSS=[['🗻','フジヤマ大王'],['🌀','タイフーン'],['🏙️','メガシティ'],['🌾','イナホ将軍'],['🍎','アップルキング'],['🥬','キャベツ仙人'],['🐄','モーモー親分'],['🐙','大ダコ'],['🌲','森のヌシ'],['⚡','カミナリ電鬼'],['🤖','メカロボ'],['🚄','暴走エクスプレス'],['🚢','コンテナ船長'],['🛢️','タンカー男爵'],['🏛️','国会の番人'],['🐉','ワールドドラゴン'],['🌋','マグマ獣']];
+const bossOf=u=>BOSS[u]||['👾','なぞのボス'];
+const beaten=u=>((st.boss||{})[u]||{}).n||0;
+function boss(u){
+  screen='boss';const B=bossOf(u),MAX=12,a=all(u);let hp=MAX,life=3,combo=0,turn=0;const miss=[];
+  // 復習まち（弱点）→ まだといていない問題 → のこり の順に出す
+  let queue=shuf(a.filter(x=>rec0(key(x)).m)).concat(shuf(a.filter(x=>!rec0(key(x)).m&&!rec0(key(x)).r))).concat(shuf(a.filter(x=>!rec0(key(x)).m&&rec0(key(x)).r))),qi=0;
+  function nextQ(){if(qi>=queue.length){queue=shuf(a);qi=0}return queue[qi++]}
+  const hearts=()=>'❤️'.repeat(life)+'🤍'.repeat(3-life);
+  function show(){
+    const x=nextQ(),weak=!!rec0(key(x)).m,os=opts(x);turn++;
+    $.innerHTML=`<div class="card"><div class="top"><button class="back" id="bk">← にげる</button><span>ボスバトル　${esc(UNITS[u].t)}</span></div>
+    <div class="arena"><div class="face" id="fc">${B[0]}</div><div class="bname">${esc(B[1])}</div>
+    <div class="hp"><i id="hp" style="width:${hp/MAX*100}%"></i></div><div class="brow"><span id="hpt">HP ${hp} / ${MAX}</span><span id="cb">${combo>=2?combo+'れんぞく正解！':''}</span><span id="lf">${hearts()}</span></div></div>
+    ${weak?'<div class="tag">弱点！ 正解で大ダメージ</div>':''}<div class="q">${esc(x.q)}</div>${os.map((o,i)=>`<button class="opt" data-i="${i}">${esc(o)}</button>`).join('')}
+    <div class="msg" id="mg"></div><div class="bar"><button class="btn pri" id="nx" hidden>つぎへ →</button></div></div>`;
+    const bs=[...$.querySelectorAll('.opt')];
+    bs.forEach((b,i)=>b.onclick=()=>{
+      const ok=os[i]===x.a;bs.forEach((c,j)=>{c.disabled=true;if(os[j]===x.a)c.classList.add('ok')});
+      const m=document.getElementById('mg'),fc=document.getElementById('fc');
+      if(ok){combo++;const dmg=1+(combo>=3?1:0)+(weak?1:0);hp=Math.max(0,hp-dmg);fc.classList.add('hit');
+        m.textContent='○ 正解！ '+dmg+' ダメージ'+(weak?'（弱点）':'')+(combo>=3?'（コンボ）':'');m.className='msg ok'}
+      else{b.classList.add('ng');combo=0;life--;miss.push(x);queue.push(x);
+        m.textContent='✕ 正解は「'+x.a+'」　ハートが1つへった';m.className='msg ng'}
+      mark(x,ok);
+      document.getElementById('hp').style.width=hp/MAX*100+'%';document.getElementById('hpt').textContent='HP '+hp+' / '+MAX;
+      document.getElementById('lf').textContent=hearts();document.getElementById('cb').textContent=combo>=2?combo+'れんぞく正解！':'';
+      const n=document.getElementById('nx');n.hidden=false;n.textContent=hp<=0?'とどめ！ →':life<=0?'けっかを見る →':'つぎへ →';
+      n.onclick=()=>hp<=0?end(true):life<=0?end(false):show();
+    });
+    document.getElementById('bk').onclick=home;window.scrollTo(0,0);
+  }
+  function end(win){
+    screen='result';const first=win&&!beaten(u);
+    if(win){st.boss=st.boss||{};const b=st.boss[u]||{n:0,best:0};b.n++;b.best=Math.max(b.best,life);st.boss[u]=b;save()}
+    let h=`<div class="card"><div class="top"><span>ボスバトル　${esc(UNITS[u].t)}</span></div>
+    <div class="arena"><div class="face ${win?'down':''}">${B[0]}</div><div class="bname">${win?esc(B[1])+' をたおした！':esc(B[1])+' にまけた…'}</div></div>
+    <p>${win?(first?'バッジをゲット！ ':'')+'のこりハート '+'❤️'.repeat(life)+'　'+turn+' 問で勝利':'ボスののこりHPは '+hp+'。まちがえた問題を見てから、もう一度ちょうせんしよう。'}</p>`;
+    if(miss.length)h+=`<table>${miss.map(x=>`<tr><td>${esc(x.q)}</td><td class="a"><span>${esc(x.a)}</span></td></tr>`).join('')}</table>`;
+    h+=`<div class="bar"><button class="btn pri" id="ag">${win?'もう一度たたかう':'もう一度ちょうせん'}</button><button class="btn" id="hm">もどる</button></div></div>`;
+    $.innerHTML=h;document.getElementById('ag').onclick=()=>boss(u);document.getElementById('hm').onclick=home;window.scrollTo(0,0);
+  }
+  show();
+}
+
 /* ---- 一覧 ---- */
 function list(u){
   screen='list';const a=all(u);
@@ -271,7 +332,7 @@ function wrongList(){
 
 /* ---- 記録 ---- */
 function lastDays(n){const r=[];for(let i=0;i<n;i++){const d=new Date();d.setDate(d.getDate()-i);const k=today(d),g=st.days[k]||[0,0];r.push([k,g[0],g[1]])}return r}
-function report(){const t=totals(),L=['社会データバンク 暗記クイズ 成績（'+today()+'）','クリア '+t.c+' / '+t.n+'問　いまの正答率 '+(t.rate==null?'–':t.rate+'%')+'（累計 '+(t.cum==null?'–':t.cum+'%')+'）　まちがえたことがある '+t.ev+'問　復習まち '+t.m+'問','','■ 日別（といた数／正解）'];
+function report(){const t=totals(),L=['社会データバンク 暗記クイズ 成績（'+today()+'）','クリア '+t.c+' / '+t.n+'問　いまの正答率 '+(t.rate==null?'–':t.rate+'%')+'（累計 '+(t.cum==null?'–':t.cum+'%')+'）　まちがえたことがある '+t.ev+'問　復習まち '+t.m+'問　たおしたボス '+UNITS.filter((_,k)=>beaten(k)).length+' / '+UNITS.length,'','■ 日別（といた数／正解）'];
   lastDays(7).forEach(d=>L.push(d[0].slice(5).replace('-','/')+'　'+d[1]+'問／'+d[2]+'問'));
   L.push('','■ 単元別（クリア／いまの正答率／復習まち）');
   UNITS.forEach((u,k)=>{const s=unitStat(k);L.push(u.t+'　'+s.c+'/'+s.n+'　'+(s.rate==null?'–':s.rate+'%')+'　'+s.m+'問')});
