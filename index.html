@@ -75,6 +75,7 @@ textarea{width:100%;height:160px;margin-top:8px;font:inherit;font-size:.82rem;ba
 .bosses{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:8px}
 .bz{border:1px solid var(--line);background:var(--card);border-radius:12px;padding:6px 2px 4px;text-align:center}
 .bz span{display:block;font-size:1.9rem;line-height:1.3}.bz small{display:block;font-size:.68rem;color:var(--sub)}
+.bz.lock{opacity:.75;border-style:dashed}.bz.lock small{color:var(--ng)}
 .bz.off span{filter:grayscale(1);opacity:.35}.bz:not(.off){border-color:var(--gold)}
 .arena{text-align:center;margin:4px 0 12px}.face{font-size:5rem;line-height:1.2;display:inline-block}
 .face.hit{animation:hit .45s}.face.down{filter:grayscale(1);transform:rotate(90deg);opacity:.6}
@@ -177,8 +178,9 @@ function home(){
   <button data-m="quiz" class="${mode==='quiz'?'on':''}">4択クイズ</button>
   <button data-m="card" class="${mode==='card'?'on':''}">めくりカード</button>
   <button data-m="list" class="${mode==='list'?'on':''}">一覧でチェック</button></div></div><h2>ボスバトル（たおした数 ${UNITS.filter((_,k)=>beaten(k)).length} / ${UNITS.length}）</h2>
-  <div class="bosses">${UNITS.map((u,k)=>`<button class="bz ${beaten(k)?'':'off'}" data-b="${k}"><span>${bossOf(k)[0]}</span><small>${esc(u.t.split('　')[0])}${beaten(k)?'<br>Lv.'+Math.min(5,beaten(k))+' クリア':''}</small></button>`).join('')}</div>
-  <p class="note" style="margin-top:6px">ボスをタップするとバトル開始。正解でこうげき、まちがえるとハートがへり、ボスがかいふくします。1問の制限時間はLv.1が15秒で、レベルが上がるほど短くなります（13→11→9→8秒）。時間切れはまちがいになります。5問つづけて正解するとコンボでダメージ2倍。たおすたびにボスのレベルが上がります（Lv.5まで）。</p>
+  <div class="bosses">${UNITS.map((u,k)=>`<button class="bz ${beaten(k)?'':'off'} ${lockLeft(k)?'lock':''}" data-b="${k}"><span>${bossOf(k)[0]}</span><small>${esc(u.t.split('　')[0])}${beaten(k)?'<br>Lv.'+Math.min(5,beaten(k))+' クリア':''}${lockLeft(k)?'<br>🔒 あと'+lockLeft(k)+'問':''}</small></button>`).join('')}</div>
+  <p class="alert" id="lk" hidden></p>
+  <p class="note" style="margin-top:6px">ボスとたたかえるのは、その単元の問題をぜんぶクリア（1回以上正解）してから。ボスをタップするとバトル開始。正解でこうげき、まちがえるとハートがへり、ボスがかいふくします。1問の制限時間はLv.1が15秒で、レベルが上がるほど短くなります（13→11→9→8秒）。時間切れはまちがいになります。5問つづけて正解するとコンボでダメージ2倍。たおすたびにボスのレベルが上がります（Lv.5まで）。</p>
   <h2>地理データバンク</h2><div class="units">`;
   UNITS.forEach((u,k)=>{const s=unitStat(k);
     if(u.j&&!(UNITS[k-1]||{}).j)h+=`</div><h2>時事問題（2026年のニュース）</h2><div class="bar"><button class="btn" id="jmix">時事からランダム ${N} 問</button></div><div class="units">`;
@@ -190,7 +192,8 @@ function home(){
   document.getElementById('rev').onclick=()=>review(null);
   document.getElementById('mix').onclick=()=>run(shuf(every()).slice(0,N),'全範囲ランダム');
   document.getElementById('rc').onclick=()=>records();
-  $.querySelectorAll('[data-b]').forEach(b=>b.onclick=()=>boss(+b.dataset.b));
+  $.querySelectorAll('[data-b]').forEach(b=>b.onclick=()=>{const k=+b.dataset.b,n=lockLeft(k);if(!n)return boss(k);
+    const e=document.getElementById('lk');e.hidden=false;e.textContent='🔒 '+bossOf(k)[1]+'（'+UNITS[k].t+'）とたたかうには、あと '+n+' 問のクリアが必要です。';});
   document.getElementById('wl').onclick=wrongList;
   const jm=document.getElementById('jmix');if(jm)jm.onclick=()=>{let a=[];UNITS.forEach((u,k)=>{if(u.j)a=a.concat(all(k))});run(shuf(a).slice(0,N),'時事ランダム')};
   window.scrollTo(0,0);
@@ -255,7 +258,10 @@ function run(qs,title,u,isRev){
 const BOSS=[['🗻','フジヤマ大王'],['🌀','タイフーン'],['🏙️','メガシティ'],['🌾','イナホ将軍'],['🍎','アップルキング'],['🥬','キャベツ仙人'],['🐄','モーモー親分'],['🐙','大ダコ'],['🌲','森のヌシ'],['⚡','カミナリ電鬼'],['🤖','メカロボ'],['🚄','暴走エクスプレス'],['🚢','コンテナ船長'],['🛢️','タンカー男爵'],['🏛️','国会の番人'],['🐉','ワールドドラゴン'],['🌋','マグマ獣']];
 const bossOf=u=>BOSS[u]||['👾','なぞのボス'];
 const beaten=u=>((st.boss||{})[u]||{}).n||0;
+// ボス戦は、その単元の全問を1回以上正解（クリア）してから
+const lockLeft=u=>{const s=unitStat(u);return s.n-s.c};
 function boss(u){
+  if(lockLeft(u)>0)return home();
   screen='boss';const B=bossOf(u),lv=Math.min(5,beaten(u)+1),MAX=20+lv*5,a=all(u);let hp=MAX,life=3,combo=0,turn=0;const miss=[];
   // 復習まち（弱点）→ まだといていない問題 → のこり の順に出す
   let queue=shuf(a.filter(x=>rec0(key(x)).m)).concat(shuf(a.filter(x=>!rec0(key(x)).m&&!rec0(key(x)).r))).concat(shuf(a.filter(x=>!rec0(key(x)).m&&rec0(key(x)).r))),qi=0;
