@@ -76,7 +76,12 @@ textarea{width:100%;height:160px;margin-top:8px;font:inherit;font-size:.82rem;ba
 .bz{border:1px solid var(--line);background:var(--card);border-radius:12px;padding:6px 2px 4px;text-align:center}
 .bz span{display:block;font-size:1.9rem;line-height:1.3}.bz small{display:block;font-size:.68rem;color:var(--sub)}
 .bz.lock{opacity:.75;border-style:dashed}.bz.lock small{color:var(--ng)}
-.bz.off span{filter:grayscale(1);opacity:.35}.bz:not(.off){border-color:var(--gold)}
+.bz.off span{filter:brightness(0);opacity:.22}.bz em{display:block;font-style:normal;font-size:.7rem;color:var(--gold);letter-spacing:1px;min-height:1em}
+.bz.big{grid-column:span 2;border-width:2px}.bz.big span{font-size:2.6rem}
+.gh{display:flex;align-items:center;gap:8px;width:100%;text-align:left;border:1px solid var(--line);background:var(--card);border-radius:12px;padding:10px 12px;margin:18px 0 8px;font-weight:800;font-size:1.02rem;color:var(--ink)}
+.gh small{font-weight:600;color:var(--sub);font-size:.78rem;margin-left:auto;text-align:right}.gh i{font-style:normal;color:var(--acc);width:1.1em}.gh .badge{position:static}
+.sub{font-size:.82rem;color:var(--sub);font-weight:700;margin:12px 0 6px}
+.fire{display:inline-block;background:var(--acc2);color:var(--acc);border-radius:999px;padding:4px 14px;font-weight:800;font-size:.92rem;margin:6px 0 0}.fire.zero{background:none;border:1px dashed var(--line);color:var(--sub);font-weight:600}.bz:not(.off){border-color:var(--gold)}
 .arena{text-align:center;margin:4px 0 12px}.face{font-size:5rem;line-height:1.2;display:inline-block}
 .face.hit{animation:hit .45s}.face.down{filter:grayscale(1);transform:rotate(90deg);opacity:.6}
 @keyframes hit{20%{transform:translateX(-10px) rotate(-8deg)}50%{transform:translateX(10px) rotate(8deg);opacity:.5}80%{transform:translateX(-5px)}}
@@ -207,23 +212,32 @@ function home(){
   <div class="bar"><div class="seg">
   <button data-m="quiz" class="${mode==='quiz'?'on':''}">4択クイズ</button>
   <button data-m="card" class="${mode==='card'?'on':''}">めくりカード</button>
-  <button data-m="list" class="${mode==='list'?'on':''}">一覧でチェック</button></div></div><h2>ボスバトル（たおした数 ${UNITS.filter((_,k)=>beaten(k)).length} / ${UNITS.length}）</h2>
-  <div class="bosses">${UNITS.map((u,k)=>`<button class="bz ${beaten(k)?'':'off'} ${lockLeft(k)?'lock':''}" data-b="${k}"><span>${bossOf(k)[0]}</span><small>${esc(u.t.split('　')[0])}${beaten(k)?'<br>Lv.'+Math.min(5,beaten(k))+' クリア':''}${lockLeft(k)?'<br>🔒 あと'+lockLeft(k)+'問':''}</small></button>`).join('')}</div>
-  <p class="alert" id="lk" hidden></p>
-  <p class="note" style="margin-top:6px">ボスとたたかえるのは、その単元の問題をぜんぶクリア（1回以上正解）してから。ボスをタップするとバトル開始。正解でこうげき、まちがえるとハートがへり、ボスがかいふくします。1問の制限時間はLv.1が15秒で、レベルが上がるほど短くなります（13→11→9→8秒）。並べ替えの問題は時間が2倍です。時間切れはまちがいになります。5問つづけて正解するとコンボでダメージ2倍。たおすたびにボスのレベルが上がります（Lv.5まで）。</p>
-  <div class="units" hidden>`;
-  UNITS.forEach((u,k)=>{const s=unitStat(k);
-    if(u.g!==(UNITS[k-1]||{}).g)h+=`</div><h2>${esc(u.g)}</h2><div class="bar"><button class="btn" data-g="${esc(u.g)}">${esc(u.g.split('（')[0])}からランダム ${N} 問</button></div><div class="units">`;
-    h+=`<button class="unit" data-u="${k}"><b>${esc(u.t)}</b><small>${s.c} / ${s.n} 問クリア${s.rate==null?'':'　正答率 '+s.rate+'%'}</small>${s.m?`<span class="badge">復習 ${s.m}</span>`:''}<div class="meter"><i style="width:${Math.round(s.c/s.n*100)}%"></i></div></button>`});
-  h+=`</div><p class="note">まちがえた問題は「復習まち」に入り、2回つづけて正解すると卒業します。地理の数値と順位はデータバンク（N64-01〜04）の記載どおりです。時事問題は2026年11月時点のニュース記事をもとに作りました。年表・歴史・公民は教科書で一般的な内容によります。公民データバンク①〜⑧の数値と順位は「公民のデータバンク」（N64-09）の記載どおりです。【手書きメモ】とある問題は、プリントの書きこみから作りました。</p>`;
+  <button data-m="list" class="${mode==='list'?'on':''}">一覧でチェック</button></div></div>`;
+  const sk=streak(),bs=bestStreak(),nb=UNITS.length+GR.length,got=UNITS.filter((_,k)=>beaten(k)).length+GR.filter((_,i)=>beaten('B'+i)).length;
+  h=h.replace('<div class="stats">',`<p class="fire ${sk?'':'zero'}">${sk?'🔥 '+sk+' 日連続'+(did()?'！':'中。今日もやると '+(sk+1)+' 日目')+(bs>sk?'（最長 '+bs+' 日）':''):'今日1問でもとくと、連続記録がスタート'+(bs?'（最長 '+bs+' 日）':'')}</p><div class="stats">`);
+  h+=`<h2>コーナー　<small class="un">ボススタンプ ${got} / ${nb}</small></h2>
+  <div class="bar"><button class="btn" id="fa">${GR.every(g=>fold[g])?'ぜんぶ開く':'ぜんぶたたむ'}</button></div><p class="alert" id="lk" hidden></p>`;
+  const bz=(k,big)=>{const L=lockLeft(k),B=bossOf(k);return `<button class="bz ${big?'big':''} ${beaten(k)?'':'off'} ${L?'lock':''}" data-b="${k}"><span>${B[0]}</span><em>${stars(k)}</em><small>${beaten(k)?esc(B[1]):'？？？'}<br>${big?'大ボス':esc(UNITS[k].t.split('　')[0])}${L?'<br>🔒 あと'+L+'問':beaten(k)?'<br>Lv.'+Math.min(5,beaten(k))+' クリア':'<br>ちょうせん！'}</small></button>`};
+  GR.forEach((g,gi)=>{const ks=gUnits(g),t={n:0,c:0,m:0};ks.forEach(k=>{const x=unitStat(k);t.n+=x.n;t.c+=x.c;t.m+=x.m});
+    const won=ks.filter(k=>beaten(k)).length+(beaten('B'+gi)?1:0);
+    h+=`<button class="gh" data-f="${esc(g)}"><i>${fold[g]?'▸':'▾'}</i>${esc(gName(g))}${t.m?`<span class="badge">復習 ${t.m}</span>`:''}<small>クリア ${t.c} / ${t.n}　スタンプ ${won} / ${ks.length+1}</small></button>`;
+    if(fold[g])return;
+    h+=`<div class="bar"><button class="btn" data-g="${esc(g)}">${esc(gName(g))}からランダム ${N} 問</button></div><div class="units">`;
+    ks.forEach(k=>{const u=UNITS[k],x=unitStat(k);
+      h+=`<button class="unit" data-u="${k}"><b>${esc(u.t)}</b><small>${x.c} / ${x.n} 問クリア${x.rate==null?'':'　正答率 '+x.rate+'%'}</small>${x.m?`<span class="badge">復習 ${x.m}</span>`:''}<div class="meter"><i style="width:${Math.round(x.c/x.n*100)}%"></i></div></button>`});
+    h+=`</div><p class="sub">ボススタンプ（タップでバトル）</p><div class="bosses">${ks.map(k=>bz(k)).join('')}${bz('B'+gi,true)}</div>`});
+  h+=`<p class="note" style="margin-top:14px">ボスとたたかえるのは、その単元の問題をぜんぶクリア（1回以上正解）してから。たおしたボスはスタンプになり、勝つたびに★がふえます（3つまで）。コーナーの単元をぜんぶクリアすると、コーナー全範囲から出題される「大ボス」にちょうせんできます。正解でこうげき、まちがえるとハートがへり、ボスがかいふくします。1問の制限時間はLv.1が15秒で、レベルが上がるほど短くなります（13→11→9→8秒）。並べ替えの問題は時間が2倍です。時間切れはまちがいになります。5問つづけて正解するとコンボでダメージ2倍。たおすたびにボスのレベルが上がります（Lv.5まで）。</p>
+  <p class="note">まちがえた問題は「復習まち」に入り、2回つづけて正解すると卒業します。地理の数値と順位はデータバンク（N64-01〜04）の記載どおりです。時事問題は2026年11月時点のニュース記事をもとに作りました。年表・歴史・公民は教科書で一般的な内容によります。公民データバンク①〜⑧の数値と順位は「公民のデータバンク」（N64-09）の記載どおりです。【手書きメモ】とある問題は、プリントの書きこみから作りました。</p>`;
   $.innerHTML=h;
   $.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{mode=b.dataset.m;home()});
   $.querySelectorAll('[data-u]').forEach(b=>b.onclick=()=>start(+b.dataset.u));
   document.getElementById('rev').onclick=()=>review(null);
   document.getElementById('mix').onclick=()=>run(shuf(every()).slice(0,N),'全範囲ランダム');
   document.getElementById('rc').onclick=()=>records();
-  $.querySelectorAll('[data-b]').forEach(b=>b.onclick=()=>{const k=+b.dataset.b,n=lockLeft(k);if(!n)return boss(k);
-    const e=document.getElementById('lk');e.hidden=false;e.textContent='🔒 '+bossOf(k)[1]+'（'+UNITS[k].t+'）とたたかうには、あと '+n+' 問のクリアが必要です。';});
+  $.querySelectorAll('[data-b]').forEach(b=>b.onclick=()=>{const v=b.dataset.b,k=/^B/.test(v)?v:+v,n=lockLeft(k);if(!n)return boss(k);
+    const e=document.getElementById('lk');e.hidden=false;e.textContent='🔒 '+bossTitle(k)+' のボスとたたかうには、あと '+n+' 問のクリアが必要です。';e.scrollIntoView({block:'center'})});
+  $.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{const y=window.scrollY,f=Object.assign({},fold);f[b.dataset.f]=!f[b.dataset.f];setFold(f);home();window.scrollTo(0,y)});
+  document.getElementById('fa').onclick=()=>{const allF=GR.every(g=>fold[g]),f={};GR.forEach(g=>f[g]=!allF);setFold(f);home()};
   document.getElementById('wl').onclick=wrongList;
   $.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{let a=[];UNITS.forEach((u,k)=>{if(u.g===b.dataset.g)a=a.concat(all(k))});run(shuf(a).slice(0,N),b.dataset.g.split('（')[0]+' ランダム')});
   window.scrollTo(0,0);
@@ -281,13 +295,26 @@ function run(qs,title,u,isRev){
 
 /* ---- ボスバトル ---- */
 const BOSS=[['🗻','フジヤマ大王'],['🌀','タイフーン'],['🏙️','メガシティ'],['🌾','イナホ将軍'],['🍎','アップルキング'],['🥬','キャベツ仙人'],['🐄','モーモー親分'],['🐙','大ダコ'],['🌲','森のヌシ'],['⚡','カミナリ電鬼'],['🤖','メカロボ'],['🚄','暴走エクスプレス'],['🚢','コンテナ船長'],['🛢️','タンカー男爵'],['🏛️','国会の番人'],['🐉','ワールドドラゴン'],['🌋','マグマ獣'],['🏺','ドグウ魔神'],['⚔️','サムライ大将'],['🏯','天守の主'],['🚂','文明開化号'],['💣','ばくだん将軍'],['📺','テレビ怪人'],['⏳','時の番人'],['🦣','マンモス王'],['🗿','ダイブツ大仏'],['🌸','みやびの君'],['🏹','弓取り御家人'],['🐎','下剋上ライダー'],['🍵','茶の湯マスター'],['🎭','カブキ獅子'],['🎩','文明開化紳士'],['📻','ラジオ塔'],['🗼','高度成長タワー'],['📜','古文書の精'],['📖','ケンポー博士'],['🕊️','ピースバード'],['🏢','ギジドー'],['👔','ソーリ・ロボ'],['⚖️','テンビン判事'],['🗳️','投票箱キング'],['💰','ゼイキン魔人'],['🌐','グローバル卿'],['🧮','ドント算術師'],['🔔','カイキ延長鬼'],['🏰','カスミガセキ城'],['💴','コクサイ大魔王'],['🏘️','リコール町長'],['👫','ギャップ伯爵'],['🪖','ブルーヘルメット'],['💹','GDPタイタン']];
-const bossOf=u=>BOSS[u]||['👾','なぞのボス'];
+const GR=[...new Set(UNITS.map(u=>u.g))],gName=g=>g.split('（')[0],gUnits=g=>UNITS.map((u,k)=>u.g===g?k:-1).filter(k=>k>=0);
+const BIG=[['🌏','ニッポン大帝'],['📰','ニュース大魔王'],['🕰️','クロノス大王'],['👑','レキシ大将軍'],['🦅','ケンポー大帝']];
+const isBig=u=>typeof u==='string',bigG=u=>GR[+u.slice(1)];
+const bossOf=u=>isBig(u)?(BIG[+u.slice(1)]||['🐲','大ボス']):(BOSS[u]||['👾','なぞのボス']);
+const bossQs=u=>isBig(u)?gUnits(bigG(u)).reduce((a,k)=>a.concat(all(k)),[]):all(u);
+const bossTitle=u=>isBig(u)?gName(bigG(u))+' 大ボス（全範囲）':UNITS[u].t;
+const stars=u=>'★'.repeat(Math.min(3,beaten(u)));
+// 連続日数：1問でもといた日がつづいた数。今日がまだなら、きのうまでの分を数える
+const did=d=>((st.days[today(d)]||[])[0]||0)>0;
+function streak(){let n=0;const d=new Date();if(!did(d))d.setDate(d.getDate()-1);while(did(d)){n++;d.setDate(d.getDate()-1)}return n}
+function bestStreak(){let b=0,c=0,p=null;Object.keys(st.days).filter(k=>(st.days[k][0]||0)>0).sort().forEach(k=>{const t=new Date(k+'T00:00:00');c=p&&Math.round((t-p)/864e5)===1?c+1:1;p=t;if(c>b)b=c});return b}
+// コーナーをたたむ：画面の状態なので、記録とは別に保存する
+let fold={};try{fold=JSON.parse(localStorage.getItem('sdb-fold')||'{}')||{}}catch(e){}
+function setFold(f){fold=f;try{localStorage.setItem('sdb-fold',JSON.stringify(fold))}catch(e){}}
 const beaten=u=>((st.boss||{})[u]||{}).n||0;
 // ボス戦は、その単元の全問を1回以上正解（クリア）してから
-const lockLeft=u=>{const s=unitStat(u);return s.n-s.c};
+const lockLeft=u=>isBig(u)?gUnits(bigG(u)).reduce((a,k)=>a+lockLeft(k),0):(s=>s.n-s.c)(unitStat(u));
 function boss(u){
   if(lockLeft(u)>0)return home();
-  screen='boss';const B=bossOf(u),lv=Math.min(5,beaten(u)+1),MAX=20+lv*5,a=all(u);let hp=MAX,life=3,combo=0,turn=0;const miss=[];
+  screen='boss';const B=bossOf(u),lv=Math.min(5,beaten(u)+1),MAX=(isBig(u)?35:20)+lv*5,a=bossQs(u);let hp=MAX,life=3,combo=0,turn=0;const miss=[];
   // 復習まち（弱点）→ まだといていない問題 → のこり の順に出す
   let queue=shuf(a.filter(x=>rec0(key(x)).m)).concat(shuf(a.filter(x=>!rec0(key(x)).m&&!rec0(key(x)).r))).concat(shuf(a.filter(x=>!rec0(key(x)).m&&rec0(key(x)).r))),qi=0;
   function nextQ(){if(qi>=queue.length){queue=shuf(a);qi=0}return queue[qi++]}
@@ -295,7 +322,7 @@ function boss(u){
   const LIMIT=[15,13,11,9,8][lv-1];let timer=null;const stop=()=>{if(timer){clearInterval(timer);timer=null}};
   function show(){
     const x=nextQ(),weak=!!rec0(key(x)).m,lim=x.o?LIMIT*2:LIMIT;turn++;
-    $.innerHTML=`<div class="card"><div class="top"><button class="back" id="bk">← にげる</button><span>ボスバトル　${esc(UNITS[u].t)}</span></div>
+    $.innerHTML=`<div class="card"><div class="top"><button class="back" id="bk">← にげる</button><span>ボスバトル　${esc(bossTitle(u))}</span></div>
     <div class="arena"><div class="face" id="fc">${B[0]}</div><div class="bname">${esc(B[1])}　Lv.${lv}<small class="un">　制限 ${LIMIT} 秒</small></div>
     <div class="hp"><i id="hp" style="width:${hp/MAX*100}%"></i></div><div class="brow"><span id="hpt">HP ${hp} / ${MAX}</span><span id="cb">${combo>=2?combo+'れんぞく正解！':''}</span><span id="lf">${hearts()}</span></div></div>
     <div class="tm"><i id="tm"></i></div><div class="tmt" id="tmt">のこり ${lim} 秒</div>
@@ -325,9 +352,9 @@ function boss(u){
   function end(win){stop();
     screen='result';const first=win&&!beaten(u);
     if(win){st.boss=st.boss||{};const b=st.boss[u]||{n:0,best:0};b.n++;b.best=Math.max(b.best,life);st.boss[u]=b;save()}
-    let h=`<div class="card"><div class="top"><span>ボスバトル　${esc(UNITS[u].t)}</span></div>
+    let h=`<div class="card"><div class="top"><span>ボスバトル　${esc(bossTitle(u))}</span></div>
     <div class="arena"><div class="face ${win?'down':''}">${B[0]}</div><div class="bname">${win?esc(B[1])+' Lv.'+lv+' をたおした！':esc(B[1])+' Lv.'+lv+' にまけた…'}</div></div>
-    <p>${win?(first?'バッジをゲット！ ':'')+'のこりハート '+'❤️'.repeat(life)+'　'+turn+' 問で勝利':'ボスののこりHPは '+hp+'。まちがえた問題を見てから、もう一度ちょうせんしよう。'}</p>`;
+    <p>${win?(first?'スタンプをゲット！ ':beaten(u)<=3?'スタンプの★が '+beaten(u)+' こになった！ ':'')+'のこりハート '+'❤️'.repeat(life)+'　'+turn+' 問で勝利':'ボスののこりHPは '+hp+'。まちがえた問題を見てから、もう一度ちょうせんしよう。'}</p>`;
     if(miss.length)h+=`<table>${miss.map(x=>`<tr><td>${esc(x.q)}</td><td class="a"><span>${esc(x.a)}</span></td></tr>`).join('')}</table>`;
     h+=`<div class="bar"><button class="btn pri" id="ag">${win?(lv<5?'Lv.'+(lv+1)+' にちょうせん':'もう一度たたかう'):'もう一度ちょうせん'}</button><button class="btn" id="hm">もどる</button></div></div>`;
     $.innerHTML=h;document.getElementById('ag').onclick=()=>boss(u);document.getElementById('hm').onclick=home;window.scrollTo(0,0);
@@ -372,7 +399,7 @@ function wrongList(){
 
 /* ---- 記録 ---- */
 function lastDays(n){const r=[];for(let i=0;i<n;i++){const d=new Date();d.setDate(d.getDate()-i);const k=today(d),g=st.days[k]||[0,0];r.push([k,g[0],g[1]])}return r}
-function report(){const t=totals(),L=['社会データバンク 暗記クイズ 成績（'+today()+'）','クリア '+t.c+' / '+t.n+'問　いまの正答率 '+(t.rate==null?'–':t.rate+'%')+'（累計 '+(t.cum==null?'–':t.cum+'%')+'）　まちがえたことがある '+t.ev+'問　復習まち '+t.m+'問　たおしたボス '+UNITS.filter((_,k)=>beaten(k)).length+' / '+UNITS.length,'','■ 日別（といた数／正解）'];
+function report(){const t=totals(),L=['社会データバンク 暗記クイズ 成績（'+today()+'）','クリア '+t.c+' / '+t.n+'問　いまの正答率 '+(t.rate==null?'–':t.rate+'%')+'（累計 '+(t.cum==null?'–':t.cum+'%')+'）　まちがえたことがある '+t.ev+'問　復習まち '+t.m+'問　たおしたボス '+UNITS.filter((_,k)=>beaten(k)).length+' / '+UNITS.length+'　大ボス '+GR.filter((_,i)=>beaten('B'+i)).length+' / '+GR.length+'　連続 '+streak()+'日（最長 '+bestStreak()+'日）','','■ 日別（といた数／正解）'];
   lastDays(7).forEach(d=>L.push(d[0].slice(5).replace('-','/')+'　'+d[1]+'問／'+d[2]+'問'));
   L.push('','■ 単元別（クリア／いまの正答率／復習まち）');
   UNITS.forEach((u,k)=>{const s=unitStat(k);L.push(u.t+'　'+s.c+'/'+s.n+'　'+(s.rate==null?'–':s.rate+'%')+'　'+s.m+'問')});
