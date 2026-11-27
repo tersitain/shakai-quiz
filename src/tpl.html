@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>社会データバンク 暗記クイズ</title>
+<style>
+:root{--bg:#f6f4ee;--card:#fff;--ink:#22262b;--sub:#6b7280;--line:#e2ded3;--acc:#1f6f5c;--acc2:#e8f3ef;--ok:#1d8a4e;--okbg:#e4f5ea;--ng:#c0392b;--ngbg:#fbe9e6;--gold:#d99a1c}
+@media(prefers-color-scheme:dark){:root{--bg:#16191c;--card:#20252a;--ink:#eceae4;--sub:#9aa3ad;--line:#343b42;--acc:#5cc0a6;--acc2:#1f332e;--ok:#5fd08d;--okbg:#1d3527;--ng:#f08a7c;--ngbg:#3b2220;--gold:#f0b94a}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Hiragino Sans","Yu Gothic UI","Noto Sans JP",Meiryo,sans-serif;line-height:1.6;-webkit-text-size-adjust:100%}
+.wrap{max-width:760px;margin:0 auto;padding:20px 16px 60px}
+h1{font-size:1.45rem;margin:.2em 0}
+.lead{color:var(--sub);font-size:.9rem;margin:0 0 16px}
+button{font:inherit;color:inherit;cursor:pointer}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+.btn{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:10px 14px;font-weight:600}
+.btn.pri{background:var(--acc);border-color:var(--acc);color:#fff}
+@media(prefers-color-scheme:dark){.btn.pri{color:#10201c}}
+.btn:disabled{opacity:.45;cursor:default}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--card)}
+.seg button{border:0;background:none;padding:8px 14px;font-weight:600;color:var(--sub)}
+.seg button.on{background:var(--acc2);color:var(--acc)}
+.units{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.unit{text-align:left;border:1px solid var(--line);background:var(--card);border-radius:14px;padding:12px 14px;display:block;width:100%}
+.unit:hover{border-color:var(--acc)}
+.unit b{display:block;font-size:.98rem}
+.unit small{color:var(--sub);display:block}
+.meter{height:6px;background:var(--line);border-radius:3px;margin-top:8px;overflow:hidden}
+.meter i{display:block;height:100%;background:var(--acc)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px}
+.top{display:flex;justify-content:space-between;align-items:center;color:var(--sub);font-size:.85rem;margin-bottom:10px;gap:8px}
+.q{font-size:1.2rem;font-weight:700;margin:6px 0 16px}
+.opt{display:block;width:100%;text-align:left;border:1.5px solid var(--line);background:var(--card);border-radius:12px;padding:13px 14px;margin:8px 0;font-size:1.05rem}
+.opt:hover:not(:disabled){border-color:var(--acc)}
+.opt.ok{border-color:var(--ok);background:var(--okbg);font-weight:700}
+.opt.ng{border-color:var(--ng);background:var(--ngbg)}
+.msg{font-weight:700;margin:12px 0 0;min-height:1.6em}
+.msg.ok{color:var(--ok)}.msg.ng{color:var(--ng)}
+.ans{font-size:1.35rem;font-weight:800;color:var(--acc);margin:10px 0;min-height:2em}
+.big{font-size:2.6rem;font-weight:800;margin:.1em 0}
+.star{color:var(--gold);font-size:1.6rem;letter-spacing:4px}
+table{width:100%;border-collapse:collapse;font-size:.95rem}
+td{border-bottom:1px solid var(--line);padding:8px 6px;vertical-align:top}
+td.a{width:38%;font-weight:700;color:var(--acc)}
+td.a.hide span{visibility:hidden}
+td.a.hide{background:var(--acc2);cursor:pointer;border-radius:6px}
+.note{color:var(--sub);font-size:.8rem;margin-top:24px}
+.back{color:var(--acc);text-decoration:none;font-weight:600;background:none;border:0;padding:0}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}
+.stats div{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 8px;text-align:center}
+.stats b{display:block;font-size:1.35rem;line-height:1.3}.stats b i{font-style:normal;font-size:.8rem;color:var(--sub);font-weight:600}
+.stats small{color:var(--sub);font-size:.72rem}.stats .warn b{color:var(--ng)}
+@media(max-width:520px){.stats{grid-template-columns:repeat(2,1fr)}}
+.badge{display:inline-block;background:var(--ngbg);color:var(--ng);border-radius:999px;padding:0 9px;font-size:.75rem;font-weight:700;margin-left:8px}
+.tag{display:inline-block;background:var(--ngbg);color:var(--ng);border-radius:999px;padding:1px 10px;font-size:.78rem;font-weight:700}
+.alert{background:var(--ngbg);color:var(--ng);border-radius:10px;padding:8px 12px;font-size:.88rem;font-weight:600}
+h2{font-size:1.05rem;margin:22px 0 8px}
+.tb th{text-align:left;font-size:.8rem;color:var(--sub);font-weight:600;padding:4px 6px;border-bottom:1px solid var(--line)}
+.mini{border:1px solid var(--ng);color:var(--ng);background:none;border-radius:8px;padding:3px 9px;font-size:.82rem;font-weight:700}
+.cnt{color:var(--ng);font-weight:700}.dot{color:var(--ng)}.un{color:var(--sub)}
+textarea{width:100%;height:160px;margin-top:8px;font:inherit;font-size:.82rem;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:8px}
+.okline{color:var(--ok);font-size:.85rem;font-weight:600;margin:4px 0}
+.alert{margin:4px 0}
+.uh{font-weight:700;background:var(--acc2);color:var(--acc);border-radius:6px}.okc{color:var(--ok);font-weight:700}
+.bosses{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:8px}
+.bz{border:1px solid var(--line);background:var(--card);border-radius:12px;padding:6px 2px 4px;text-align:center}
+.bz span{display:block;font-size:1.9rem;line-height:1.3}.bz small{display:block;font-size:.68rem;color:var(--sub)}
+.bz.lock{opacity:.75;border-style:dashed}.bz.lock small{color:var(--ng)}
+.bz.off span{filter:brightness(0);opacity:.22}.bz em{display:block;font-style:normal;font-size:.7rem;color:var(--gold);letter-spacing:1px;min-height:1em}
+.bz.big{grid-column:span 2;border-width:2px}.bz.big span{font-size:2.6rem}
+.gh{display:flex;align-items:center;gap:8px;width:100%;text-align:left;border:1px solid var(--line);background:var(--card);border-radius:12px;padding:10px 12px;margin:18px 0 8px;font-weight:800;font-size:1.02rem;color:var(--ink)}
+.gh small{font-weight:600;color:var(--sub);font-size:.78rem;margin-left:auto;text-align:right}.gh i{font-style:normal;color:var(--acc);width:1.1em}.gh .badge{position:static}
+.sub{font-size:.82rem;color:var(--sub);font-weight:700;margin:12px 0 6px}
+.fire{display:inline-block;background:var(--acc2);color:var(--acc);border-radius:999px;padding:4px 14px;font-weight:800;font-size:.92rem;margin:6px 0 0}.fire.zero{background:none;border:1px dashed var(--line);color:var(--sub);font-weight:600}.bz:not(.off){border-color:var(--gold)}
+.arena{text-align:center;margin:4px 0 12px}.face{font-size:5rem;line-height:1.2;display:inline-block}
+.face.hit{animation:hit .45s}.face.down{filter:grayscale(1);transform:rotate(90deg);opacity:.6}
+@keyframes hit{20%{transform:translateX(-10px) rotate(-8deg)}50%{transform:translateX(10px) rotate(8deg);opacity:.5}80%{transform:translateX(-5px)}}
+.bname{font-weight:800;font-size:1.1rem;margin-bottom:6px}
+.hp{height:14px;background:var(--line);border-radius:7px;overflow:hidden}.hp i{display:block;height:100%;background:var(--ng);transition:width .4s}
+.brow{display:flex;justify-content:space-between;font-size:.85rem;color:var(--sub);margin-top:4px;font-weight:600}#cb{color:var(--gold)}
+.tm{height:8px;background:var(--line);border-radius:4px;overflow:hidden;margin-top:4px}.tm i{display:block;height:100%;width:100%;background:var(--acc)}.tm i.red{background:var(--ng)}
+.tmt{font-size:.8rem;color:var(--sub);font-weight:600;text-align:right;margin-bottom:6px}
+.hint{color:var(--sub);font-size:.82rem;margin:0 0 4px}
+.ord{display:flex;align-items:center;gap:10px}.ord .no{flex:none;width:1.8em;height:1.8em;line-height:1.7em;border-radius:50%;border:1.5px solid var(--line);text-align:center;font-size:.95rem}
+.ord.sel{border-color:var(--acc);background:var(--acc2)}.ord.sel .no,.ord.ok .no{background:var(--acc);border-color:var(--acc);color:#fff}.ord.ng .no{background:var(--ng);border-color:var(--ng);color:#fff}
+.ord .yr{margin-left:auto;color:var(--sub);font-size:.85rem;font-weight:400;white-space:nowrap}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<script>
+/*DATA*/
+const $=document.getElementById('app');
+const KEY='sdb-quiz-v2',OLD='sdb-quiz-v1',N=10;
+let st={v:2,q:{},days:{},ts:0},lsOK=false,idbOK=false,mode='quiz',screen='home';
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function shuf(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+const id=(u,i)=>u+'-'+i;
+const rec0=k=>st.q[k]||{r:0,w:0,s:0,m:0};
+function today(d){d=d||new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function valid(s){return s&&s.v===2&&s.q&&s.days}
+
+/* ---- 保存：localStorage と IndexedDB の両方に書き、新しいほうを読む ---- */
+function migrate(o){const n={v:2,q:{},days:{},ts:1};
+  Object.keys(o.right||{}).forEach(k=>n.q[k]={r:1,w:0,s:2,m:0});
+  Object.keys(o.wrong||{}).forEach(k=>n.q[k]={r:0,w:1,s:0,m:1});return n}
+try{const s=JSON.parse(localStorage.getItem(KEY)||'null');
+  if(valid(s))st=s;else{const o=JSON.parse(localStorage.getItem(OLD)||'null');if(o&&o.right&&o.wrong)st=migrate(o)}
+  localStorage.setItem('sdb-test','1');lsOK=localStorage.getItem('sdb-test')==='1'}catch(e){}
+let dbp=null;
+function odb(){if(!dbp)dbp=new Promise((res,rej)=>{try{const r=indexedDB.open('sdbquiz',1);
+  r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}});return dbp}
+function idbGet(){return odb().then(db=>new Promise((res,rej)=>{const r=db.transaction('kv').objectStore('kv').get(KEY);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}))}
+function idbPut(v){return odb().then(db=>new Promise((res,rej)=>{const t=db.transaction('kv','readwrite');t.objectStore('kv').put(v,KEY);t.oncomplete=()=>res();t.onerror=()=>rej(t.error)}))}
+function save(){st.ts=Date.now();const j=JSON.stringify(st);
+  try{localStorage.setItem(KEY,j);lsOK=true}catch(e){lsOK=false}
+  idbPut(j).then(()=>{idbOK=true},()=>{idbOK=false});push()}
+idbGet().then(j=>{idbOK=true;let s=null;try{s=JSON.parse(j||'null')}catch(e){}
+  if(valid(s)&&s.ts>(st.ts||0)){st=s;try{localStorage.setItem(KEY,j)}catch(e){}}
+  else if(st.ts)idbPut(JSON.stringify(st)).catch(()=>{});
+  if(screen==='home')home();else if(screen==='rec')records()},()=>{idbOK=false;if(screen==='home')home()});
+
+/* ---- Claudeにログイン中（このページの持ち主）なら、記録をアカウント側にも保存する ---- */
+let cloud='off',ref=null,writing=false,again=false;
+function merge(a,b){const o={v:2,q:{},days:{},ts:Math.max(a.ts||0,b.ts||0)};
+  new Set(Object.keys(a.q).concat(Object.keys(b.q))).forEach(k=>{const x=a.q[k],y=b.q[k];
+    o.q[k]=!x?y:!y?x:((y.t||0)>(x.t||0)||((y.t||0)===(x.t||0)&&y.r+y.w>x.r+x.w))?y:x});
+  new Set(Object.keys(a.days).concat(Object.keys(b.days))).forEach(k=>{const x=a.days[k]||[0,0],y=b.days[k]||[0,0];o.days[k]=y[0]>x[0]?y:x});
+  const ba=a.boss||{},bb=b.boss||{};if(a.boss||b.boss){o.boss={};new Set(Object.keys(ba).concat(Object.keys(bb))).forEach(k=>{const x=ba[k]||{n:0,best:0},y=bb[k]||{n:0,best:0};o.boss[k]={n:Math.max(x.n,y.n),best:Math.max(x.best,y.best)}})}
+  return o}
+function localSave(){const j=JSON.stringify(st);try{localStorage.setItem(KEY,j);lsOK=true}catch(e){lsOK=false}idbPut(j).then(()=>{idbOK=true},()=>{idbOK=false})}
+function push(){if(!ref)return;if(writing){again=true;return}writing=true;
+  ref.set(JSON.parse(JSON.stringify(st))).then(()=>{cloud='ok'},()=>{cloud='ng'}).then(()=>{writing=false;if(again){again=false;push()}})}
+function pull(){if(!ref)return Promise.resolve();
+  return ref.get().then(snap=>{cloud='ok';const s=snap.exists?snap.data():null;
+    if(valid(s)){const before=JSON.stringify(st);st=merge(st,JSON.parse(JSON.stringify(s)));
+      if(JSON.stringify(st)!==before)localSave();
+      if(JSON.stringify(st)!==JSON.stringify(s))push()}
+    else if(st.ts)push();
+    if(screen==='home')home();else if(screen==='rec')records(true)},()=>{cloud='ng';if(screen==='home')home()})}
+(async()=>{if(!window.claude||typeof window.claude.use!=='function')return;
+  const db=await window.claude.use('db'),user=await window.claude.use('user');if(!db||!user)return;
+  const uid=await user.id();if(!uid)return;
+  ref=db.doc('data/users/'+uid+'/progress');await pull()})().catch(()=>{});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&ref&&(screen==='home'||screen==='rec'))pull()});
+function whereSaved(){return cloud==='ok'?'記録はClaudeアカウントに保存されています（ほかの端末でも同じ記録が見られます）'
+  :lsOK||idbOK?'記録はこの端末のブラウザだけに保存しています。iPadではページをとじると消えることがあります'
+  :'この端末では記録を保存できません。ページをとじると記録が消えます'}
+
+/* ---- 問題 ---- */
+function all(u){return UNITS[u].q.map((q,i)=>({u,i,q:q[0],a:q[1],d:q[2],o:q[3]}))}
+function every(){let a=[];UNITS.forEach((_,u)=>a=a.concat(all(u)));return a}
+function opts(x){
+  if(typeof x.d==='string'&&/^@Y\d/.test(x.d)){
+    // 年号は近い年どうしでまよわせ、選択肢は古い順にならべる
+    const p=POOLS[x.d.slice(1)].slice().sort((a,b)=>parseInt(a)-parseInt(b)),i=p.indexOf(x.a);
+    const near=p.filter((v,j)=>j!==i&&Math.abs(j-i)<=4);
+    return [x.a,...shuf(near).slice(0,3)].sort((a,b)=>parseInt(a)-parseInt(b))}
+  let ds=typeof x.d==='string'?shuf(POOLS[x.d.slice(1)].filter(v=>v!==x.a)).slice(0,3):x.d;return shuf([x.a,...ds])}
+const right=x=>x.o?'正しい順番は上のとおり':'正解は「'+x.a+'」';
+// #qa に選択肢を出す。答えたら done(正解か, 時間切れか) を1回だけ呼ぶ
+function ask(x,done){
+  const el=document.getElementById('qa');let fin=false;
+  if(x.o){
+    const its=shuf(x.o.map((t,i)=>({n:t[0],l:t[1],i}))),pk=[];
+    el.innerHTML=`<p class="hint">${/順$/.test(x.q)?'問題文の順番どおりにタップしよう':'古いものから順にタップしよう'}（最後にえらんだものは、もう一度タップで取り消し）</p><div id="ol">${its.map((t,j)=>`<button class="opt ord" data-j="${j}"><b class="no"></b><span>${esc(t.n)}</span><small class="yr"></small></button>`).join('')}</div><div class="bar"><button class="btn" id="rs">えらびなおす</button></div>`;
+    const bs=[...el.querySelectorAll('.opt')];
+    const paint=()=>bs.forEach((b,j)=>{const p=pk.indexOf(j);b.querySelector('.no').textContent=p<0?'':p+1;b.classList.toggle('sel',p>=0)});
+    const finish=out=>{if(fin)return;fin=true;const ok=!out&&pk.length===its.length&&pk.every((j,p)=>its[j].i===p),ol=document.getElementById('ol');
+      its.map((t,j)=>({t,j})).sort((a,b)=>a.t.i-b.t.i).forEach(({t,j})=>{const b=bs[j];b.disabled=true;b.classList.remove('sel');b.classList.add(pk.indexOf(j)===t.i?'ok':'ng');
+        b.querySelector('.no').textContent=t.i+1;b.querySelector('.yr').textContent=t.l;ol.appendChild(b)});
+      document.getElementById('rs').hidden=true;done(ok,!!out)};
+    bs.forEach((b,j)=>b.onclick=()=>{if(fin)return;const p=pk.indexOf(j);if(p>=0){if(p===pk.length-1){pk.pop();paint()}return}pk.push(j);paint();if(pk.length===its.length)finish(false)});
+    document.getElementById('rs').onclick=()=>{if(!fin){pk.length=0;paint()}};
+    return {timeout:()=>finish(true)}}
+  const os=opts(x);el.innerHTML=os.map((o,i)=>`<button class="opt" data-i="${i}">${esc(o)}</button>`).join('');
+  const bs=[...el.querySelectorAll('.opt')];
+  const finish=i=>{if(fin)return;fin=true;const ok=i>=0&&os[i]===x.a;bs.forEach((c,j)=>{c.disabled=true;if(os[j]===x.a)c.classList.add('ok')});if(i>=0&&!ok)bs[i].classList.add('ng');done(ok,i<0)};
+  bs.forEach((b,i)=>b.onclick=()=>finish(i));return {timeout:()=>finish(-1)}}
+const key=x=>id(x.u,x.i);
+function pending(u){return (u==null?every():all(u)).filter(x=>rec0(key(x)).m)}
+function mark(x,ok){const k=key(x),r=Object.assign({},rec0(k));
+  if(ok){r.r++;r.s++;if(r.s>=2)r.m=0}else{r.w++;r.s=0;r.m=1}
+  r.t=Date.now();st.q[k]=r;const d=today(),g=st.days[d]||[0,0];g[0]++;if(ok)g[1]++;st.days[d]=g;save()}
+function unitStat(u){let c=0,r=0,w=0,m=0,a=0,ok=0,ev=0;const n=UNITS[u].q.length;
+  for(let i=0;i<n;i++){const x=rec0(id(u,i));if(x.r)c++;r+=x.r;w+=x.w;if(x.m)m++;if(x.r+x.w){a++;if(x.s>0)ok++}if(x.w)ev++}
+  return {n,c,r,w,m,a,ok,ev,rate:a?Math.round(ok/a*100):null}}
+function totals(){const t={n:0,c:0,r:0,w:0,m:0,a:0,ok:0,ev:0};UNITS.forEach((_,u)=>{const s=unitStat(u);for(const k in t)t[k]+=s[k]});
+  t.rate=t.a?Math.round(t.ok/t.a*100):null;t.cum=t.r+t.w?Math.round(t.r/(t.r+t.w)*100):null;return t}
+function everWrong(){return every().filter(x=>rec0(key(x)).w>0).sort((a,b)=>rec0(key(b)).w-rec0(key(a)).w||a.u-b.u||a.i-b.i)}
+
+/* ---- ホーム ---- */
+function home(){
+  screen='home';const t=totals(),g=st.days[today()]||[0,0];
+  let h=`<h1>社会データバンク 暗記クイズ</h1>
+  <p class="lead">${[...new Set(UNITS.map(u=>u.g))].map(g=>g.split('（')[0]+' '+UNITS.filter(u=>u.g===g).reduce((a,u)=>a+u.q.length,0)+' 問').join('、')}。1回 ${N} 問、3分でおわります。</p>
+  <div class="stats"><div><b>${g[0]}</b><small>今日といた数</small></div><div><b>${g[0]?Math.round(g[1]/g[0]*100)+'%':'–'}</b><small>今日の正答率</small></div>
+  <div><b>${t.c}<i> / ${t.n}</i></b><small>クリアした問題</small></div><div class="${t.m?'warn':''}"><b>${t.m}</b><small>復習まちの問題</small></div></div>
+  <p class="${cloud==='ok'?'okline':'alert'}">${whereSaved()}。</p>
+  <div class="bar"><button class="btn pri" id="rev" ${t.m?'':'disabled'}>復習する（${t.m}問）</button>
+  <button class="btn" id="mix">全範囲からランダム ${N} 問</button><button class="btn" id="rc">記録を見る</button><button class="btn" id="wl" ${t.ev?'':'disabled'}>まちがえた問題の一覧（${t.ev}問）</button></div>
+  <div class="bar"><div class="seg">
+  <button data-m="quiz" class="${mode==='quiz'?'on':''}">4択クイズ</button>
+  <button data-m="card" class="${mode==='card'?'on':''}">めくりカード</button>
+  <button data-m="list" class="${mode==='list'?'on':''}">一覧でチェック</button></div></div>`;
+  const sk=streak(),bs=bestStreak(),nb=UNITS.length+GR.length,got=UNITS.filter((_,k)=>beaten(k)).length+GR.filter((_,i)=>beaten('B'+i)).length;
+  h=h.replace('<div class="stats">',`<p class="fire ${sk?'':'zero'}">${sk?'🔥 '+sk+' 日連続'+(did()?'！':'中。今日もやると '+(sk+1)+' 日目')+(bs>sk?'（最長 '+bs+' 日）':''):'今日1問でもとくと、連続記録がスタート'+(bs?'（最長 '+bs+' 日）':'')}</p><div class="stats">`);
+  h+=`<h2>コーナー　<small class="un">ボススタンプ ${got} / ${nb}</small></h2>
+  <div class="bar"><button class="btn" id="fa">${GR.every(g=>fold[g])?'ぜんぶ開く':'ぜんぶたたむ'}</button></div><p class="alert" id="lk" hidden></p>`;
+  const bz=(k,big)=>{const L=lockLeft(k),B=bossOf(k);return `<button class="bz ${big?'big':''} ${beaten(k)?'':'off'} ${L?'lock':''}" data-b="${k}"><span>${B[0]}</span><em>${stars(k)}</em><small>${beaten(k)?esc(B[1]):'？？？'}<br>${big?'大ボス':esc(UNITS[k].t.split('　')[0])}${L?'<br>🔒 あと'+L+'問':beaten(k)?'<br>Lv.'+Math.min(5,beaten(k))+' クリア':'<br>ちょうせん！'}</small></button>`};
+  GR.forEach((g,gi)=>{const ks=gUnits(g),t={n:0,c:0,m:0};ks.forEach(k=>{const x=unitStat(k);t.n+=x.n;t.c+=x.c;t.m+=x.m});
+    const won=ks.filter(k=>beaten(k)).length+(beaten('B'+gi)?1:0);
+    h+=`<button class="gh" data-f="${esc(g)}"><i>${fold[g]?'▸':'▾'}</i>${esc(gName(g))}${t.m?`<span class="badge">復習 ${t.m}</span>`:''}<small>クリア ${t.c} / ${t.n}　スタンプ ${won} / ${ks.length+1}</small></button>`;
+    if(fold[g])return;
+    h+=`<div class="bar"><button class="btn" data-g="${esc(g)}">${esc(gName(g))}からランダム ${N} 問</button></div><div class="units">`;
+    ks.forEach(k=>{const u=UNITS[k],x=unitStat(k);
+      h+=`<button class="unit" data-u="${k}"><b>${esc(u.t)}</b><small>${x.c} / ${x.n} 問クリア${x.rate==null?'':'　正答率 '+x.rate+'%'}</small>${x.m?`<span class="badge">復習 ${x.m}</span>`:''}<div class="meter"><i style="width:${Math.round(x.c/x.n*100)}%"></i></div></button>`});
+    h+=`</div><p class="sub">ボススタンプ（タップでバトル）</p><div class="bosses">${ks.map(k=>bz(k)).join('')}${bz('B'+gi,true)}</div>`});
+  h+=`<p class="note" style="margin-top:14px">ボスとたたかえるのは、その単元の問題をぜんぶクリア（1回以上正解）してから。たおしたボスはスタンプになり、勝つたびに★がふえます（3つまで）。コーナーの単元をぜんぶクリアすると、コーナー全範囲から出題される「大ボス」にちょうせんできます。正解でこうげき、まちがえるとハートがへり、ボスがかいふくします。1問の制限時間はLv.1が15秒で、レベルが上がるほど短くなります（13→11→9→8秒）。並べ替えの問題は時間が2倍です。時間切れはまちがいになります。5問つづけて正解するとコンボでダメージ2倍。たおすたびにボスのレベルが上がります（Lv.5まで）。</p>
+  <p class="note">まちがえた問題は「復習まち」に入り、2回つづけて正解すると卒業します。地理の数値と順位はデータバンク（N64-01〜04）の記載どおりです。時事問題は2026年11月時点のニュース記事をもとに作りました。年表・歴史・公民は教科書で一般的な内容によります。公民データバンク①〜⑧の数値と順位は「公民のデータバンク」（N64-09）の記載どおりです。【手書きメモ】とある問題は、プリントの書きこみから作りました。</p>`;
+  $.innerHTML=h;
+  $.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{mode=b.dataset.m;home()});
+  $.querySelectorAll('[data-u]').forEach(b=>b.onclick=()=>start(+b.dataset.u));
+  document.getElementById('rev').onclick=()=>review(null);
+  document.getElementById('mix').onclick=()=>run(shuf(every()).slice(0,N),'全範囲ランダム');
+  document.getElementById('rc').onclick=()=>records();
+  $.querySelectorAll('[data-b]').forEach(b=>b.onclick=()=>{const v=b.dataset.b,k=/^B/.test(v)?v:+v,n=lockLeft(k);if(!n)return boss(k);
+    const e=document.getElementById('lk');e.hidden=false;e.textContent='🔒 '+bossTitle(k)+' のボスとたたかうには、あと '+n+' 問のクリアが必要です。';e.scrollIntoView({block:'center'})});
+  $.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{const y=window.scrollY,f=Object.assign({},fold);f[b.dataset.f]=!f[b.dataset.f];setFold(f);home();window.scrollTo(0,y)});
+  document.getElementById('fa').onclick=()=>{const allF=GR.every(g=>fold[g]),f={};GR.forEach(g=>f[g]=!allF);setFold(f);home()};
+  document.getElementById('wl').onclick=wrongList;
+  $.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{let a=[];UNITS.forEach((u,k)=>{if(u.g===b.dataset.g)a=a.concat(all(k))});run(shuf(a).slice(0,N),b.dataset.g.split('（')[0]+' ランダム')});
+  window.scrollTo(0,0);
+}
+function review(u){const p=pending(u);if(!p.length)return;
+  // まちがえた回数が多い順に、古いものから
+  p.sort((a,b)=>rec0(key(b)).w-rec0(key(a)).w||(rec0(key(a)).t||0)-(rec0(key(b)).t||0));
+  run(shuf(p.slice(0,N)),u==null?'復習':'復習：'+UNITS[u].t,u,true)}
+function start(u){
+  if(mode==='list')return list(u);
+  const a=all(u),pe=shuf(a.filter(x=>rec0(key(x)).m)),todo=shuf(a.filter(x=>!rec0(key(x)).m&&!rec0(key(x)).r)),rest=shuf(a.filter(x=>!rec0(key(x)).m&&rec0(key(x)).r));
+  // 復習まちを最大4問まぜ、のこりは未クリアを優先
+  const pick=pe.slice(0,4).concat(todo).concat(pe.slice(4)).concat(rest).slice(0,N);
+  run(shuf(pick),UNITS[u].t,u);
+}
+
+/* ---- 出題 ---- */
+function run(qs,title,u,isRev){
+  if(!qs.length)return home();
+  screen='run';qs=qs.slice();const base=qs.length;let k=0,score=0;const miss=[];
+  function ans(x,ok){mark(x,ok);if(!x.re){if(ok)score++;else{miss.push(x);qs.push(Object.assign({},x,{re:1}))}}}
+  function head(x){return `<div class="top"><button class="back" id="bk">← やめる</button><span>${esc(title)}　${x.re?'もう一度':(k+1)+' / '+base}</span></div>${x.re?'<div class="tag">さっきまちがえた問題</div>':rec0(key(x)).m?'<div class="tag">復習まちの問題</div>':''}`}
+  function next(){k++;k<qs.length?show():result()}
+  function show(){
+    const x=qs[k];
+    if(mode==='card'){
+      $.innerHTML=`<div class="card">${head(x)}<div class="q">${esc(x.q)}</div><div class="ans" id="an"></div>
+      <div class="bar" id="b1"><button class="btn pri" id="sh">答えを見る</button></div>
+      <div class="bar" id="b2" hidden><button class="btn" id="ng">✕ まだ</button><button class="btn pri" id="ok">○ おぼえた</button></div></div>`;
+      document.getElementById('sh').onclick=()=>{document.getElementById('an').textContent=x.a;document.getElementById('b1').hidden=true;document.getElementById('b2').hidden=false};
+      document.getElementById('ok').onclick=()=>{ans(x,true);next()};
+      document.getElementById('ng').onclick=()=>{ans(x,false);next()};
+    }else{
+      $.innerHTML=`<div class="card">${head(x)}<div class="q">${esc(x.q)}</div><div id="qa"></div>
+      <div class="msg" id="mg"></div><div class="bar"><button class="btn pri" id="nx" hidden>つぎへ →</button></div></div>`;
+      ask(x,ok=>{ans(x,ok);
+        const m=document.getElementById('mg');m.textContent=ok?'○ 正解！':'✕ '+right(x);m.className='msg '+(ok?'ok':'ng');
+        const n=document.getElementById('nx');n.hidden=false;n.onclick=next});
+    }
+    document.getElementById('bk').onclick=home;window.scrollTo(0,0);
+  }
+  function result(){
+    screen='result';const p=score/base,s=p===1?3:p>=.8?2:p>=.5?1:0,left=pending(u).length;
+    let h=`<div class="card"><div class="top"><span>${esc(title)}</span></div><div class="star">${'★'.repeat(s)}${'☆'.repeat(3-s)}</div>
+    <div class="big">${score} / ${base}</div><p>${p===1?'パーフェクト！':p>=.8?'あと少しで全問正解！':p>=.5?'半分こえた。まちがえた問題は復習まちに入ったよ。':'下の答えを見てから、もう一回やってみよう。'}</p>`;
+    if(miss.length)h+=`<table>${miss.map(x=>`<tr><td>${esc(x.q)}</td><td class="a"><span>${esc(x.a)}</span></td></tr>`).join('')}</table>`;
+    h+=`<div class="bar">${left?`<button class="btn pri" id="rv">復習する（${left}問）</button>`:''}${u!=null&&!isRev?'<button class="btn" id="ag">この単元をつづける</button>':''}<button class="btn" id="hm">単元えらびへ</button></div></div>`;
+    $.innerHTML=h;
+    const rv=document.getElementById('rv');if(rv)rv.onclick=()=>review(u);
+    const ag=document.getElementById('ag');if(ag)ag.onclick=()=>start(u);
+    document.getElementById('hm').onclick=home;window.scrollTo(0,0);
+  }
+  show();
+}
+
+/* ---- ボスバトル ---- */
+const BOSS=[['🗻','フジヤマ大王'],['🌀','タイフーン'],['🏙️','メガシティ'],['🌾','イナホ将軍'],['🍎','アップルキング'],['🥬','キャベツ仙人'],['🐄','モーモー親分'],['🐙','大ダコ'],['🌲','森のヌシ'],['⚡','カミナリ電鬼'],['🤖','メカロボ'],['🚄','暴走エクスプレス'],['🚢','コンテナ船長'],['🛢️','タンカー男爵'],['🏛️','国会の番人'],['🐉','ワールドドラゴン'],['🌋','マグマ獣'],['🏺','ドグウ魔神'],['⚔️','サムライ大将'],['🏯','天守の主'],['🚂','文明開化号'],['💣','ばくだん将軍'],['📺','テレビ怪人'],['⏳','時の番人'],['🦣','マンモス王'],['🗿','ダイブツ大仏'],['🌸','みやびの君'],['🏹','弓取り御家人'],['🐎','下剋上ライダー'],['🍵','茶の湯マスター'],['🎭','カブキ獅子'],['🎩','文明開化紳士'],['📻','ラジオ塔'],['🗼','高度成長タワー'],['📜','古文書の精'],['📖','ケンポー博士'],['🕊️','ピースバード'],['🏢','ギジドー'],['👔','ソーリ・ロボ'],['⚖️','テンビン判事'],['🗳️','投票箱キング'],['💰','ゼイキン魔人'],['🌐','グローバル卿'],['🧮','ドント算術師'],['🔔','カイキ延長鬼'],['🏰','カスミガセキ城'],['💴','コクサイ大魔王'],['🏘️','リコール町長'],['👫','ギャップ伯爵'],['🪖','ブルーヘルメット'],['💹','GDPタイタン']];
+const GR=[...new Set(UNITS.map(u=>u.g))],gName=g=>g.split('（')[0],gUnits=g=>UNITS.map((u,k)=>u.g===g?k:-1).filter(k=>k>=0);
+const BIG=[['🌏','ニッポン大帝'],['📰','ニュース大魔王'],['🕰️','クロノス大王'],['👑','レキシ大将軍'],['🦅','ケンポー大帝']];
+const isBig=u=>typeof u==='string',bigG=u=>GR[+u.slice(1)];
+const bossOf=u=>isBig(u)?(BIG[+u.slice(1)]||['🐲','大ボス']):(BOSS[u]||['👾','なぞのボス']);
+const bossQs=u=>isBig(u)?gUnits(bigG(u)).reduce((a,k)=>a.concat(all(k)),[]):all(u);
+const bossTitle=u=>isBig(u)?gName(bigG(u))+' 大ボス（全範囲）':UNITS[u].t;
+const stars=u=>'★'.repeat(Math.min(3,beaten(u)));
+// 連続日数：1問でもといた日がつづいた数。今日がまだなら、きのうまでの分を数える
+const did=d=>((st.days[today(d)]||[])[0]||0)>0;
+function streak(){let n=0;const d=new Date();if(!did(d))d.setDate(d.getDate()-1);while(did(d)){n++;d.setDate(d.getDate()-1)}return n}
+function bestStreak(){let b=0,c=0,p=null;Object.keys(st.days).filter(k=>(st.days[k][0]||0)>0).sort().forEach(k=>{const t=new Date(k+'T00:00:00');c=p&&Math.round((t-p)/864e5)===1?c+1:1;p=t;if(c>b)b=c});return b}
+// コーナーをたたむ：画面の状態なので、記録とは別に保存する
+let fold={};try{fold=JSON.parse(localStorage.getItem('sdb-fold')||'{}')||{}}catch(e){}
+function setFold(f){fold=f;try{localStorage.setItem('sdb-fold',JSON.stringify(fold))}catch(e){}}
+const beaten=u=>((st.boss||{})[u]||{}).n||0;
+// ボス戦は、その単元の全問を1回以上正解（クリア）してから
+const lockLeft=u=>isBig(u)?gUnits(bigG(u)).reduce((a,k)=>a+lockLeft(k),0):(s=>s.n-s.c)(unitStat(u));
+function boss(u){
+  if(lockLeft(u)>0)return home();
+  screen='boss';const B=bossOf(u),lv=Math.min(5,beaten(u)+1),MAX=(isBig(u)?35:20)+lv*5,a=bossQs(u);let hp=MAX,life=3,combo=0,turn=0;const miss=[];
+  // 復習まち（弱点）→ まだといていない問題 → のこり の順に出す
+  let queue=shuf(a.filter(x=>rec0(key(x)).m)).concat(shuf(a.filter(x=>!rec0(key(x)).m&&!rec0(key(x)).r))).concat(shuf(a.filter(x=>!rec0(key(x)).m&&rec0(key(x)).r))),qi=0;
+  function nextQ(){if(qi>=queue.length){queue=shuf(a);qi=0}return queue[qi++]}
+  const hearts=()=>'❤️'.repeat(life)+'🤍'.repeat(3-life);
+  const LIMIT=[15,13,11,9,8][lv-1];let timer=null;const stop=()=>{if(timer){clearInterval(timer);timer=null}};
+  function show(){
+    const x=nextQ(),weak=!!rec0(key(x)).m,lim=x.o?LIMIT*2:LIMIT;turn++;
+    $.innerHTML=`<div class="card"><div class="top"><button class="back" id="bk">← にげる</button><span>ボスバトル　${esc(bossTitle(u))}</span></div>
+    <div class="arena"><div class="face" id="fc">${B[0]}</div><div class="bname">${esc(B[1])}　Lv.${lv}<small class="un">　制限 ${LIMIT} 秒</small></div>
+    <div class="hp"><i id="hp" style="width:${hp/MAX*100}%"></i></div><div class="brow"><span id="hpt">HP ${hp} / ${MAX}</span><span id="cb">${combo>=2?combo+'れんぞく正解！':''}</span><span id="lf">${hearts()}</span></div></div>
+    <div class="tm"><i id="tm"></i></div><div class="tmt" id="tmt">のこり ${lim} 秒</div>
+    ${weak?'<div class="tag">弱点！ 正解で大ダメージ</div>':''}<div class="q">${esc(x.q)}</div><div id="qa"></div>
+    <div class="msg" id="mg"></div><div class="bar"><button class="btn pri" id="nx" hidden>つぎへ →</button></div></div>`;
+    // out が true のときは時間切れ（不正解あつかい）
+    const A=ask(x,(ok,out)=>{
+      stop();const m=document.getElementById('mg'),fc=document.getElementById('fc');
+      if(ok){combo++;const dmg=1+(combo>=5?1:0)+(weak?1:0);hp=Math.max(0,hp-dmg);fc.classList.add('hit');
+        m.textContent='○ 正解！ '+dmg+' ダメージ'+(weak?'（弱点）':'')+(combo>=5?'（コンボ）':'');m.className='msg ok'}
+      else{combo=0;life--;miss.push(x);queue.push(x);const heal=Math.min(3,MAX-hp);hp+=heal;
+        m.textContent=(out?'⏰ 時間切れ！ ':'✕ ')+right(x)+'　ハートが1つへった'+(heal?'。ボスが '+heal+' かいふく':'');m.className='msg ng'}
+      mark(x,ok);
+      document.getElementById('hp').style.width=hp/MAX*100+'%';document.getElementById('hpt').textContent='HP '+hp+' / '+MAX;
+      document.getElementById('lf').textContent=hearts();document.getElementById('cb').textContent=combo>=2?combo+'れんぞく正解！':'';
+      const n=document.getElementById('nx');n.hidden=false;n.textContent=hp<=0?'とどめ！ →':life<=0?'けっかを見る →':'つぎへ →';
+      n.onclick=()=>hp<=0?end(true):life<=0?end(false):show();
+    });
+    const t0=Date.now(),bar=document.getElementById('tm'),txt=document.getElementById('tmt');
+    stop();timer=setInterval(()=>{
+      if(screen!=='boss'||!document.body.contains(bar)){stop();return}
+      const left=lim-(Date.now()-t0)/1000;
+      if(left<=0){bar.style.width='0%';txt.textContent='のこり 0 秒';A.timeout();return}
+      bar.style.width=left/lim*100+'%';bar.className=left<=3?'red':'';txt.textContent='のこり '+Math.ceil(left)+' 秒'},100);
+    document.getElementById('bk').onclick=()=>{stop();home()};window.scrollTo(0,0);
+  }
+  function end(win){stop();
+    screen='result';const first=win&&!beaten(u);
+    if(win){st.boss=st.boss||{};const b=st.boss[u]||{n:0,best:0};b.n++;b.best=Math.max(b.best,life);st.boss[u]=b;save()}
+    let h=`<div class="card"><div class="top"><span>ボスバトル　${esc(bossTitle(u))}</span></div>
+    <div class="arena"><div class="face ${win?'down':''}">${B[0]}</div><div class="bname">${win?esc(B[1])+' Lv.'+lv+' をたおした！':esc(B[1])+' Lv.'+lv+' にまけた…'}</div></div>
+    <p>${win?(first?'スタンプをゲット！ ':beaten(u)<=3?'スタンプの★が '+beaten(u)+' こになった！ ':'')+'のこりハート '+'❤️'.repeat(life)+'　'+turn+' 問で勝利':'ボスののこりHPは '+hp+'。まちがえた問題を見てから、もう一度ちょうせんしよう。'}</p>`;
+    if(miss.length)h+=`<table>${miss.map(x=>`<tr><td>${esc(x.q)}</td><td class="a"><span>${esc(x.a)}</span></td></tr>`).join('')}</table>`;
+    h+=`<div class="bar"><button class="btn pri" id="ag">${win?(lv<5?'Lv.'+(lv+1)+' にちょうせん':'もう一度たたかう'):'もう一度ちょうせん'}</button><button class="btn" id="hm">もどる</button></div></div>`;
+    $.innerHTML=h;document.getElementById('ag').onclick=()=>boss(u);document.getElementById('hm').onclick=home;window.scrollTo(0,0);
+  }
+  show();
+}
+
+/* ---- 一覧 ---- */
+function list(u){
+  screen='list';const a=all(u);
+  $.innerHTML=`<div class="card"><div class="top"><button class="back" id="bk">← もどる</button><span>${esc(UNITS[u].t)}　${a.length}問</span></div>
+  <div class="bar"><button class="btn" id="tg">答えをぜんぶ表示</button></div>
+  <table>${a.map(x=>`<tr><td>${rec0(key(x)).m?'<span class="dot">●</span> ':''}${esc(x.q)}</td><td class="a hide"><span>${esc(x.a)}</span></td></tr>`).join('')}</table>
+  <p class="note"><span class="dot">●</span> は復習まちの問題です。答えのらんをタップすると表示されます。</p></div>`;
+  $.querySelectorAll('td.a').forEach(t=>t.onclick=()=>t.classList.toggle('hide'));
+  let shown=false;
+  document.getElementById('tg').onclick=function(){shown=!shown;$.querySelectorAll('td.a').forEach(t=>t.classList.toggle('hide',!shown));this.textContent=shown?'答えをぜんぶかくす':'答えをぜんぶ表示'};
+  document.getElementById('bk').onclick=home;window.scrollTo(0,0);
+}
+
+/* ---- これまでにまちがえた問題の一覧 ---- */
+function wrongList(){
+  screen='wl';const a=everWrong(),pe=a.filter(x=>rec0(key(x)).m).length;
+  let h=`<div class="card"><div class="top"><button class="back" id="bk">← もどる</button><span>まちがえた問題の一覧　${a.length}問</span></div>
+  <p class="lead">これまでに1回でもまちがえた問題です（復習まち ${pe}問、いまは正解 ${a.length-pe}問）。</p>`;
+  if(a.length){h+=`<div class="bar"><button class="btn pri" id="go">この中から ${Math.min(N,a.length)} 問とく</button><button class="btn" id="tg">答えをぜんぶ表示</button></div><table>`;
+    let cu=-1;a.slice().sort((x,y)=>x.u-y.u||rec0(key(y)).w-rec0(key(x)).w||x.i-y.i).forEach(x=>{const r=rec0(key(x));
+      if(x.u!==cu){cu=x.u;h+=`<tr><td colspan="2" class="uh">${esc(UNITS[x.u].t)}</td></tr>`}
+      h+=`<tr><td><span class="cnt">×${r.w}</span> ${esc(x.q)}<br><small class="${r.m?'cnt':'okc'}">${r.m?'復習まち':'いまは正解'}</small></td><td class="a hide"><span>${esc(x.a)}</span></td></tr>`});
+    h+=`</table><p class="note">×の数字はまちがえた回数です。答えのらんをタップすると表示されます。</p>`}
+  else h+='<p class="lead">まだまちがえた問題はありません。</p>';
+  $.innerHTML=h+'</div>';
+  document.getElementById('bk').onclick=home;
+  $.querySelectorAll('td.a').forEach(c=>c.onclick=()=>c.classList.toggle('hide'));
+  const tg=document.getElementById('tg');let shown=false;
+  if(tg)tg.onclick=function(){shown=!shown;$.querySelectorAll('td.a').forEach(c=>c.classList.toggle('hide',!shown));this.textContent=shown?'答えをぜんぶかくす':'答えをぜんぶ表示'};
+  const go=document.getElementById('go');
+  // 復習まちを先に、のこりはまちがえた回数が多い順
+  if(go)go.onclick=()=>{const p=a.filter(x=>rec0(key(x)).m).concat(a.filter(x=>!rec0(key(x)).m));run(shuf(p.slice(0,N)),'まちがえた問題')};
+  window.scrollTo(0,0);
+}
+
+/* ---- 記録 ---- */
+function lastDays(n){const r=[];for(let i=0;i<n;i++){const d=new Date();d.setDate(d.getDate()-i);const k=today(d),g=st.days[k]||[0,0];r.push([k,g[0],g[1]])}return r}
+function report(){const t=totals(),L=['社会データバンク 暗記クイズ 成績（'+today()+'）','クリア '+t.c+' / '+t.n+'問　いまの正答率 '+(t.rate==null?'–':t.rate+'%')+'（累計 '+(t.cum==null?'–':t.cum+'%')+'）　まちがえたことがある '+t.ev+'問　復習まち '+t.m+'問　たおしたボス '+UNITS.filter((_,k)=>beaten(k)).length+' / '+UNITS.length+'　大ボス '+GR.filter((_,i)=>beaten('B'+i)).length+' / '+GR.length+'　連続 '+streak()+'日（最長 '+bestStreak()+'日）','','■ 日別（といた数／正解）'];
+  lastDays(7).forEach(d=>L.push(d[0].slice(5).replace('-','/')+'　'+d[1]+'問／'+d[2]+'問'));
+  L.push('','■ 単元別（クリア／いまの正答率／復習まち）');
+  UNITS.forEach((u,k)=>{const s=unitStat(k);L.push(u.t+'　'+s.c+'/'+s.n+'　'+(s.rate==null?'–':s.rate+'%')+'　'+s.m+'問')});
+  const p=pending(null).sort((a,b)=>rec0(key(b)).w-rec0(key(a)).w);
+  if(p.length){L.push('','■ 復習まちの問題（まちがえた回数）');p.forEach(x=>L.push('×'+rec0(key(x)).w+'　'+x.q+' → '+x.a))}
+  return L.join('\n')}
+function records(noPull){
+  screen='rec';if(!noPull&&ref)pull();const t=totals(),p=pending(null).sort((a,b)=>rec0(key(b)).w-rec0(key(a)).w);
+  let h=`<div class="card"><div class="top"><button class="back" id="bk">← もどる</button><span>記録</span></div>
+  <div class="stats"><div><b>${t.c}<i> / ${t.n}</i></b><small>クリアした問題</small></div><div><b>${t.rate==null?'–':t.rate+'%'}</b><small>いまの正答率</small></div>
+  <div><b>${t.r+t.w}</b><small>といた回数</small></div><div class="${t.m?'warn':''}"><b>${t.m}</b><small>復習まちの問題</small></div></div>
+  <p class="note" style="margin-top:0">いまの正答率は、といた ${t.a} 問のうち、いちばん最近の回答が正解だった問題（${t.ok} 問）の割合です。まちがえた問題も、あとで正解すれば上がります。全回答の累計では ${t.cum==null?'–':t.cum+'%'} です。</p>
+  <div class="bar"><button class="btn" id="wl2" ${t.ev?'':'disabled'}>まちがえた問題の一覧（${t.ev}問）</button></div>
+  <h2>日ごとの記録（7日間）</h2><table class="tb"><tr><th>日</th><th>といた数</th><th>正解</th><th>正答率</th></tr>
+  ${lastDays(7).map(d=>`<tr><td>${d[0].slice(5).replace('-','/')}</td><td>${d[1]}</td><td>${d[2]}</td><td>${d[1]?Math.round(d[2]/d[1]*100)+'%':'–'}</td></tr>`).join('')}</table>
+  <h2>単元ごとの記録</h2><table class="tb"><tr><th>単元</th><th>クリア</th><th>いまの正答率</th><th>復習まち</th></tr>
+  ${UNITS.map((u,k)=>{const s=unitStat(k);return `<tr><td>${esc(u.t)}</td><td>${s.c} / ${s.n}</td><td>${s.rate==null?'–':s.rate+'%'}</td><td>${s.m?`<button class="mini" data-r="${k}">${s.m}問 復習</button>`:'0'}</td></tr>`}).join('')}</table>
+  <h2>復習まちの問題（${p.length}問）</h2>`;
+  h+=p.length?`<div class="bar"><button class="btn pri" id="rv">まとめて復習する</button><button class="btn" id="tg">答えをぜんぶ表示</button></div>
+  <table>${p.map(x=>`<tr><td><span class="cnt">×${rec0(key(x)).w}</span> ${esc(x.q)}<br><small class="un">${esc(UNITS[x.u].t)}</small></td><td class="a hide"><span>${esc(x.a)}</span></td></tr>`).join('')}</table>`
+   :'<p class="lead">復習まちの問題はありません。</p>';
+  h+=`<h2>成績を送る</h2><div class="bar"><button class="btn" id="cp">成績をコピー</button></div><textarea id="tx" readonly hidden></textarea>
+  <p class="note">保存の状態：${whereSaved()}。</p></div>`;
+  $.innerHTML=h;
+  document.getElementById('bk').onclick=home;document.getElementById('wl2').onclick=wrongList;
+  $.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>review(+b.dataset.r));
+  $.querySelectorAll('td.a').forEach(c=>c.onclick=()=>c.classList.toggle('hide'));
+  const rv=document.getElementById('rv');if(rv)rv.onclick=()=>review(null);
+  const tg=document.getElementById('tg');let shown=false;
+  if(tg)tg.onclick=function(){shown=!shown;$.querySelectorAll('td.a').forEach(c=>c.classList.toggle('hide',!shown));this.textContent=shown?'答えをぜんぶかくす':'答えをぜんぶ表示'};
+  document.getElementById('cp').onclick=function(){const s=report(),tx=document.getElementById('tx'),b=this;tx.value=s;tx.hidden=false;
+    const done=()=>{b.textContent='コピーしました'},fail=()=>{b.textContent='下の文をえらんでコピーしてね';tx.focus();tx.select()};
+    try{navigator.clipboard.writeText(s).then(done,fail)}catch(e){fail()}};
+  window.scrollTo(0,0);
+}
+home();
+</script>
+</body>
+</html>
